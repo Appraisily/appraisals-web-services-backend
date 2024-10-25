@@ -7,6 +7,8 @@ const { Storage } = require('@google-cloud/storage');
 const vision = require('@google-cloud/vision');
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs').promises;
+const path = require('path');
 require('dotenv').config();
 
 // Initialize Express app
@@ -53,7 +55,13 @@ const analyzeImageWithGoogleVision = async (imageUri) => {
     }
 
     console.log('Google Vision web detection results obtained.');
-    return webDetection;
+
+    // Extract labels and web entities
+    const labels = webDetection.webEntities
+      .filter((entity) => entity.description)
+      .map((entity) => entity.description);
+
+    return { webDetection, labels };
   } catch (error) {
     console.error('Error analyzing image with Google Vision:', error);
     throw new Error('Error analyzing image with Google Vision.');
@@ -61,22 +69,37 @@ const analyzeImageWithGoogleVision = async (imageUri) => {
 };
 
 // Function to generate prompt for OpenAI
-const generatePrompt = (customerImageUrl, similarImageUrls) => {
-  let prompt = `You are an art expert. A customer has provided an image of an artwork: ${customerImageUrl}\n\n`;
+const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
+  try {
+    const promptFilePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
+    let prompt = await fs.readFile(promptFilePath, 'utf8');
 
-  if (similarImageUrls.length > 0) {
-    prompt += `Here are some images of similar artworks:\n`;
-    similarImageUrls.forEach((url, index) => {
-      prompt += `${index + 1}. ${url}\n`;
-    });
-    prompt += `\n`;
-  } else {
-    prompt += `No similar images were found.\n\n`;
+    // Replace placeholders in the prompt
+    prompt = prompt.replace('{{customerImageUrl}}', customerImageUrl);
+
+    // Handle similar image URLs
+    let similarImagesText;
+    if (similarImageUrls.length > 0) {
+      similarImagesText = similarImageUrls.map((url, index) => `${index + 1}. ${url}`).join('\n');
+    } else {
+      similarImagesText = 'No similar images were found.';
+    }
+    prompt = prompt.replace('{{similarImageUrls}}', similarImagesText);
+
+    // Handle labels/descriptions from Google Vision
+    let labelsText;
+    if (labels && labels.length > 0) {
+      labelsText = labels.join(', ');
+    } else {
+      labelsText = 'No descriptions available.';
+    }
+    prompt = prompt.replace('{{labels}}', labelsText);
+
+    return prompt.trim();
+  } catch (error) {
+    console.error('Error reading prompt file:', error);
+    throw new Error('Error generating prompt.');
   }
-
-  prompt += `Please analyze the customer's artwork, compare it with the similar artworks provided, and offer insights about the artwork's style, potential artist, historical context, and any other relevant information.`;
-
-  return prompt.trim();
 };
 
 // Function to generate text with OpenAI
@@ -152,10 +175,10 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
     }
 
     // Step 3: Analyze the image with Google Vision API
-    const detectionInfo = await analyzeImageWithGoogleVision(customerImageUrl);
+    const { webDetection, labels } = await analyzeImageWithGoogleVision(customerImageUrl);
 
     // Step 4: Extract similar image URLs from Google Vision's response
-    const similarImageUrls = detectionInfo.visuallySimilarImages
+    const similarImageUrls = webDetection.visuallySimilarImages
       .map((image) => image.url)
       .filter((url) => url);
 
@@ -166,6 +189,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
     sessions[sessionId] = {
       customerImageUrl,
       similarImageUrls,
+      labels,
       timestamp: Date.now(),
     };
 
@@ -200,10 +224,10 @@ app.post('/generate-analysis', async (req, res) => {
     }
 
     // Retrieve session data
-    const { customerImageUrl, similarImageUrls } = sessions[sessionId];
+    const { customerImageUrl, similarImageUrls, labels } = sessions[sessionId];
 
     // Step 1: Construct the prompt for OpenAI
-    const prompt = generatePrompt(customerImageUrl, similarImageUrls);
+    const prompt = await generatePrompt(customerImageUrl, similarImageUrls, labels);
 
     // Step 2: Call OpenAI API with the prompt
     const generatedText = await generateTextWithOpenAI(prompt);
