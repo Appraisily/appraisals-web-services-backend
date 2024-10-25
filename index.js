@@ -1,6 +1,7 @@
 // index.js
 
 const express = require('express');
+const multer = require('multer');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 const vision = require('@google-cloud/vision');
@@ -8,7 +9,7 @@ const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
 const path = require('path');
-require('dotenv').config();
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 
 // Initialize Express app
 const app = express();
@@ -19,18 +20,66 @@ app.use(express.json());
 // Enable CORS for all routes
 app.use(cors());
 
-// Initialize Google Cloud Storage
-const storage = new Storage({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_CLOUD_KEYFILE,
-});
-const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
+// Initialize Secret Manager client
+const secretClient = new SecretManagerServiceClient();
 
-// Initialize Google Vision Client
-const visionClient = new vision.ImageAnnotatorClient({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_CLOUD_KEYFILE,
-});
+// Function to get secret from Secret Manager
+const getSecret = async (secretName) => {
+  try {
+    const projectId = 'civil-forge-403609'; // Replace with your project ID
+    const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+
+    const [version] = await secretClient.accessSecretVersion({ name });
+    const payload = version.payload.data.toString('utf8');
+    console.log(`Secret '${secretName}' retrieved successfully.`);
+    return payload;
+  } catch (error) {
+    console.error(`Error retrieving secret '${secretName}':`, error);
+    throw new Error(`Could not retrieve secret '${secretName}'.`);
+  }
+};
+
+// Variables to store secrets
+let GOOGLE_CLOUD_PROJECT_ID;
+let GOOGLE_CLOUD_KEYFILE_CONTENT;
+let GCS_BUCKET_NAME;
+let OPENAI_API_KEY;
+
+// Function to load all secrets at startup
+const loadSecrets = async () => {
+  try {
+    GOOGLE_CLOUD_PROJECT_ID = await getSecret('GOOGLE_CLOUD_PROJECT_ID');
+    GOOGLE_CLOUD_KEYFILE_CONTENT = await getSecret('GOOGLE_CLOUD_KEYFILE');
+    GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
+    OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
+    console.log('All secrets loaded successfully.');
+
+    // Write the keyfile content to a temporary file
+    const keyFilePath = path.join(__dirname, 'keyfile.json');
+    await fs.writeFile(keyFilePath, GOOGLE_CLOUD_KEYFILE_CONTENT);
+
+    // Initialize Google Cloud Storage
+    storage = new Storage({
+      projectId: GOOGLE_CLOUD_PROJECT_ID,
+      keyFilename: keyFilePath,
+    });
+    bucket = storage.bucket(GCS_BUCKET_NAME);
+
+    // Initialize Google Vision Client
+    visionClient = new vision.ImageAnnotatorClient({
+      projectId: GOOGLE_CLOUD_PROJECT_ID,
+      keyFilename: keyFilePath,
+    });
+  } catch (error) {
+    console.error('Error loading secrets:', error);
+    process.exit(1); // Exit if secrets could not be loaded
+  }
+};
+
+// Initialize variables (will be set after loading secrets)
+let storage;
+let bucket;
+let visionClient;
 
 // Initialize Multer for file uploads
 const upload = multer({
@@ -41,7 +90,7 @@ const upload = multer({
 const sessions = {};
 
 // Feature flag
-const USE_GOOGLE_CLOUD_STORAGE = process.env.USE_GOOGLE_CLOUD_STORAGE === 'true';
+const USE_GOOGLE_CLOUD_STORAGE = true; // Set to true since we're using GCS
 
 // Function to analyze image with Google Vision
 const analyzeImageWithGoogleVision = async (imageUri) => {
@@ -108,7 +157,7 @@ const generateTextWithOpenAI = async (prompt) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo', // Use the model you have access to
@@ -165,7 +214,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
       // Make the file publicly accessible (optional)
       await file.makePublic();
 
-      customerImageUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${fileName}`;
+      customerImageUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${fileName}`;
       console.log(`Image uploaded to GCS: ${customerImageUrl}`);
     } else {
       // Step 2B: Upload to WordPress (existing functionality)
@@ -250,8 +299,10 @@ app.post('/generate-analysis', async (req, res) => {
   }
 });
 
-// Start the server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Backend server is running on port ${PORT}`);
+// Start the server after loading secrets
+loadSecrets().then(() => {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () => {
+    console.log(`Backend server is running on port ${PORT}`);
+  });
 });
