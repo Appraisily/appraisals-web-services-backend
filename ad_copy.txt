@@ -1,0 +1,34 @@
+Create two engaging ad copy paragraphs that highlight the unique features and value of an artwork to entice potential buyers. Use the provided images (front of the artwork, back, or signature) and the accompanying report title, which includes information about the artwork's age, author, composition, and style. Do not include paragraph numbering.
+
+If any of the provided images are missing, use a duplicate image in their place.
+
+# Steps
+
+1. **Analyze the Images and Report Title:**
+   - Carefully review each provided image to determine the front, back, or signature of the artwork.
+   - Note any missing images and use duplicates if needed.
+   - Extract key details from the report title such as age, author, composition, and style.
+
+2. **Highlight Key Features:**
+   - Identify and describe in engaging language the unique features of the artwork (e.g., historical significance, artistic technique, provenance).
+   - Use descriptive and persuasive language to create a sense of value and rarity.
+
+3. **Draft Two Paragraphs:**
+   - Ensure each paragraph focuses on different aspects of the artwork to provide a comprehensive and enticing description.
+   - Maintain a formal yet captivating tone suitable for art buyers.
+
+# Output Format
+
+Two paragraphs in plain text, without numbering.
+
+# Examples
+
+**Example Input:**
+Images: [URLs of front, back, signature]
+Report Title: "Circa 1885, John Doe, Oil on Canvas, Impressionist Style"
+
+**Example Output:**
+
+Immerse yourself in the late 19th century with this extraordinary oil on canvas by the renowned artist John Doe. Created in 1885, this masterpiece represents the pinnacle of the Impressionist movement, capturing the delicate interplay of light and color with stunning precision. John Doe's brushwork breathes life into the canvas, offering a glimpse into a bygone era. The rich textures and vibrant hues are a testament to Doe's unparalleled skill and artistic vision.
+
+Beyond its beauty, this artwork holds significant historical value, reflecting the artistic trends and cultural dynamics of its time. The impeccable provenance and the artist's distinguished reputation further cement its status as a valuable and rare acquisition. Whether adorning a private collection or enhancing an art gallery, this piece is sure to captivate and inspire admiration from connoisseurs and casual viewers alike. Title:
