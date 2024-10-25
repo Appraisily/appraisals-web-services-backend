@@ -41,7 +41,7 @@ const getSecret = async (secretName) => {
 
 // Variables to store secrets
 let GOOGLE_CLOUD_PROJECT_ID;
-let GOOGLE_CLOUD_KEYFILE_CONTENT;
+let SERVICE_ACCOUNT_JSON;
 let GCS_BUCKET_NAME;
 let OPENAI_API_KEY;
 
@@ -49,14 +49,14 @@ let OPENAI_API_KEY;
 const loadSecrets = async () => {
   try {
     GOOGLE_CLOUD_PROJECT_ID = await getSecret('GOOGLE_CLOUD_PROJECT_ID');
-    GOOGLE_CLOUD_KEYFILE_CONTENT = await getSecret('GOOGLE_CLOUD_KEYFILE');
+    SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Updated secret name
     GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
     OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
     console.log('All secrets loaded successfully.');
 
-    // Write the keyfile content to a temporary file
+    // Write the service account JSON content to a temporary file
     const keyFilePath = path.join(__dirname, 'keyfile.json');
-    await fs.writeFile(keyFilePath, GOOGLE_CLOUD_KEYFILE_CONTENT);
+    await fs.writeFile(keyFilePath, SERVICE_ACCOUNT_JSON);
 
     // Initialize Google Cloud Storage
     storage = new Storage({
