@@ -1,7 +1,6 @@
 // index.js
 
 const express = require('express');
-const multer = require('multer');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 const vision = require('@google-cloud/vision');
