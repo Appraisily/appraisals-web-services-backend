@@ -1,0 +1,16 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: appraisals-backend
+  namespace: civil-forge-403609
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/civil-forge-403609/appraisals-backend
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: civil-forge-403609
+      # Opcional: Añadir configuración adicional como recursos, limites, etc.
