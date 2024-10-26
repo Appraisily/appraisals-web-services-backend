@@ -114,7 +114,38 @@ const sessions = {};
 // Declaración de USE_GOOGLE_CLOUD_STORAGE
 const USE_GOOGLE_CLOUD_STORAGE = true; // Set to true since we're using GCS
 
-// Función para generar texto con OpenAI
+/**
+ * Función para verificar si una URL apunta a una imagen válida y accesible.
+ * @param {string} url - La URL de la imagen a verificar.
+ * @returns {Promise<boolean>} - Retorna true si la URL es válida y accesible, false de lo contrario.
+ */
+const isValidImageUrl = async (url) => {
+  try {
+    const response = await fetch(url, { method: 'HEAD', timeout: 5000 });
+    if (!response.ok) {
+      console.warn(`URL inválida o inaccesible: ${url}`);
+      return false;
+    }
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.startsWith('image/')) {
+      return true;
+    } else {
+      console.warn(`URL no apunta a una imagen válida: ${url}`);
+      return false;
+    }
+  } catch (error) {
+    console.warn(`Error al verificar la URL: ${url}`, error.message);
+    return false;
+  }
+};
+
+/**
+ * Función para generar texto con OpenAI.
+ * @param {string} prompt - El prompt a enviar a OpenAI.
+ * @param {string} title - El título del análisis.
+ * @param {Object} imageUrls - Objeto con URLs de imágenes (main y similares).
+ * @returns {Promise<string>} - Retorna el texto generado por OpenAI.
+ */
 const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
   // Construir el contenido del mensaje siguiendo la estructura correcta
   const messagesWithRoles = [
@@ -170,7 +201,11 @@ const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
   }
 };
 
-// Función para analizar imágenes con Google Vision
+/**
+ * Función para analizar imágenes con Google Vision.
+ * @param {string} imageUri - La URL de la imagen a analizar.
+ * @returns {Promise<Object>} - Retorna un objeto con webDetection, labels y similarImageUrls.
+ */
 const analyzeImageWithGoogleVision = async (imageUri) => {
   try {
     console.log(`Analyzing image with Google Vision API: ${imageUri}`);
@@ -189,18 +224,39 @@ const analyzeImageWithGoogleVision = async (imageUri) => {
       .map((entity) => entity.description);
 
     // Extraer imágenes similares
-    const similarImageUrls = webDetection.visuallySimilarImages
+    let similarImageUrls = webDetection.visuallySimilarImages
       .map((image) => image.url)
       .filter((url) => url);
 
-    return { webDetection, labels, similarImageUrls };
+    console.log('Similar images found:', similarImageUrls);
+
+    // Validar y filtrar URLs de imágenes similares
+    const validSimilarImageUrls = [];
+    for (const url of similarImageUrls) {
+      const isValid = await isValidImageUrl(url);
+      if (isValid) {
+        validSimilarImageUrls.push(url);
+      }
+      // Limitar a un máximo de 5 imágenes similares válidas para evitar sobrecarga
+      if (validSimilarImageUrls.length >= 5) break;
+    }
+
+    console.log('Valid similar images after filtering:', validSimilarImageUrls);
+
+    return { webDetection, labels, similarImageUrls: validSimilarImageUrls };
   } catch (error) {
     console.error('Error analyzing image with Google Vision:', error);
     throw new Error('Error analyzing image with Google Vision.');
   }
 };
 
-// Función para generar el prompt para OpenAI
+/**
+ * Función para generar el prompt para OpenAI.
+ * @param {string} customerImageUrl - La URL de la imagen del cliente.
+ * @param {Array<string>} similarImageUrls - Lista de URLs de imágenes similares válidas.
+ * @param {Array<string>} labels - Lista de etiquetas obtenidas de Google Vision.
+ * @returns {Promise<string>} - Retorna el prompt generado.
+ */
 const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
   try {
     const promptFilePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
@@ -301,6 +357,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
       sessionId: sessionId,
       customerImageUrl: customerImageUrl,
       similarImageUrls: similarImageUrls,
+      labels: labels,
     });
 
     console.log('Response sent to client successfully.');
@@ -431,8 +488,8 @@ app.post('/enhance-analysis', async (req, res) => {
     res.json({
       success: true,
       message: 'Offer generated successfully.',
-      enhancedAnalysis: analysisText,
-      offerText: offerText,
+      enhancedAnalysis: analysisText, // Análisis previo
+      offerText: offerText, // Oferta generada
     });
 
     console.log('Offer response sent to client successfully.');
