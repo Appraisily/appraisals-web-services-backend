@@ -110,7 +110,8 @@ const upload = multer({
 
 // Almacenamiento de sesiones en memoria (reemplazar con Redis para producción)
 const sessions = {};
-
+// **Declaración de USE_GOOGLE_CLOUD_STORAGE**
+const USE_GOOGLE_CLOUD_STORAGE = true; // Set to true since we're using GCS
 // Función para generar texto con OpenAI
 const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
   // Construir el contenido del mensaje siguiendo la estructura correcta
