@@ -116,49 +116,44 @@ const sessions = {};
 
 // Feature flag
 const USE_GOOGLE_CLOUD_STORAGE = true; // Set to true since we're using GCS
+const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
+  // Construir el contenido del mensaje siguiendo la estructura correcta
+  const messagesWithRoles = [
+    {
+      role: "system",
+      content: "You are a professional art expert."
+    },
+    {
+      role: "user",
+      content: [
+        { type: "text", text: `Title: ${title}` },
+        ...(imageUrls.main ? [{ type: "image_url", image_url: { url: imageUrls.main } }] : []),
+        ...(imageUrls.age ? [{ type: "image_url", image_url: { url: imageUrls.age } }] : []),
+        ...(imageUrls.signature ? [{ type: "image_url", image_url: { url: imageUrls.signature } }] : []),
+        { type: "text", text: prompt }
+      ]
+    }
+  ];
 
-const generateTextWithOpenAI = async (customerImageUrl, similarImageUrls, labels, promptTemplate) => {
   try {
-    // Construir el texto de las imágenes similares
-    let similarImagesText = similarImageUrls.length > 0
-      ? similarImageUrls.map((url, index) => `${index + 1}. ${url}`).join('\n')
-      : 'No similar images were found.';
-    
-    // Construir el texto de las etiquetas
-    let labelsText = labels && labels.length > 0
-      ? labels.join(', ')
-      : 'No descriptions available.';
-    
-    // Reemplazar los marcadores en el template del prompt
-    let prompt = promptTemplate
-      .replace('{{customerImageUrl}}', customerImageUrl)
-      .replace('{{similarImageUrls}}', similarImagesText)
-      .replace('{{labels}}', labelsText);
-    
-    console.log('Prompt generated for OpenAI:', prompt);
-    
-    // Enviar el prompt al modelo de OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: 'You are an art expert providing detailed analysis of artworks based on descriptions and context provided.' },
-          { role: 'user', content: prompt },
-        ],
+        model: 'gpt-4o-mini', // Usando el modelo indicado
+        messages: messagesWithRoles,
         max_tokens: 500,
-        temperature: 0.7,
-      }),
+        temperature: 0.7
+      })
     });
 
     if (!response.ok) {
       const errorDetails = await response.text();
-      console.error('Error from OpenAI:', errorDetails);
-      throw new Error('Error generating text with OpenAI.');
+      console.error('Error en la respuesta de OpenAI:', errorDetails);
+      throw new Error('Error generando texto con OpenAI.');
     }
 
     const data = await response.json();
@@ -166,11 +161,10 @@ const generateTextWithOpenAI = async (customerImageUrl, similarImageUrls, labels
     console.log('OpenAI generated text successfully.');
     return generatedText;
   } catch (error) {
-    console.error('Error generating text with OpenAI:', error);
-    throw new Error('Error generating text with OpenAI.');
+    console.error('Error generando texto con OpenAI:', error);
+    throw new Error('Error generando texto con OpenAI.');
   }
 };
-
 
 
 // Function to analyze image with Google Vision
@@ -346,21 +340,29 @@ app.post('/generate-analysis', async (req, res) => {
     const { customerImageUrl, similarImageUrls, labels } = sessions[sessionId];
     console.log('Session data retrieved:', { customerImageUrl, similarImageUrls, labels });
 
-    // Step 1: Read the prompt template from file
-    const promptTemplatePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
-    console.log(`Reading prompt template from ${promptTemplatePath}.`);
-    const promptTemplate = await fs.readFile(promptTemplatePath, 'utf8');
+    // Construir el prompt
+    const promptFilePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
+    console.log(`Reading prompt file from ${promptFilePath}.`);
+    const prompt = await fs.readFile(promptFilePath, 'utf8');
 
-    // Step 2: Call OpenAI API with the constructed prompt
-    console.log('Generating analysis with OpenAI...');
-    const generatedText = await generateTextWithOpenAI(customerImageUrl, similarImageUrls, labels, promptTemplate);
+    // Preparar los URLs de imágenes
+    const imageUrls = {
+      main: customerImageUrl,
+      // Si tienes otras imágenes, puedes agregarlas aquí
+      // age: 'url_de_la_imagen_de_edad',
+      // signature: 'url_de_la_imagen_de_firma',
+    };
+
+    // Llamar a OpenAI con el prompt, título y URLs de imágenes
+    const title = 'Artwork Analysis'; // Puedes ajustar el título según sea necesario
+    const generatedText = await generateTextWithOpenAI(prompt, title, imageUrls);
     console.log('Received generated text from OpenAI.');
 
-    // Step 3: Clean up the session data
+    // Clean up the session data
     delete sessions[sessionId];
     console.log(`Session data for sessionId ${sessionId} has been cleaned up.`);
 
-    // Step 4: Return the generated analysis to the client
+    // Return the generated analysis to the client
     res.json({
       success: true,
       message: 'Analysis generated successfully.',
@@ -381,6 +383,7 @@ app.post('/generate-analysis', async (req, res) => {
     });
   }
 });
+
 
 // Start the server after loading secrets
 loadSecrets().then(() => {
