@@ -234,42 +234,7 @@ const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
   }
 };
 
-// Function to generate text with OpenAI
-const generateTextWithOpenAI = async (prompt) => {
-  try {
-    console.log('Sending prompt to OpenAI API.');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo', // Use the model you have access to
-        messages: [
-          { role: 'system', content: 'You are an art expert providing detailed analysis of artworks.' },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
-    });
 
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error('Error from OpenAI:', errorDetails);
-      throw new Error('Error generating text with OpenAI.');
-    }
-
-    const data = await response.json();
-    const generatedText = data.choices[0].message.content.trim();
-    console.log('OpenAI generated text successfully.');
-    return generatedText;
-  } catch (error) {
-    console.error('Error generating text with OpenAI:', error);
-    throw new Error('Error generating text with OpenAI.');
-  }
-};
 
 // Endpoint: Upload Image and Get Similar Images
 app.post('/upload-image', upload.single('image'), async (req, res) => {
