@@ -1,0 +1,21 @@
+Describe the style, composition, and type of the provided artwork image based on its description, informing the customer that the painting is a candidate for appraisal.
+
+Include the following elements in your response:
+- **Style**: Describe the artistic style or movement related to the artwork (e.g., impressionism, abstract, realism).
+- **Composition**: Detail the arrangement of elements or subjects within the artwork (e.g., color palette, spatial arrangement, focal points).
+- **Type**: Identify the type of artwork (e.g., oil painting, sculpture, digital art).
+- **Appraisal Candidate**: Confirm that the painting is a candidate for appraisal.
+
+# Output Format
+
+A single well-structured paragraph including all the required elements.
+
+# Examples
+
+**Input**: An image of a colorful landscape titled "Mountain Serenity," described as an impressionist oil painting.
+
+**Output**: The painting "Mountain Serenity" exemplifies the impressionist style through its vibrant, dynamic brush strokes and a vivid color palette that captures the essence of the landscape. The composition features a serene mountain range with a harmonious blend of blues and greens, drawing the viewer's eye toward the central peak. As an oil painting, it showcases a rich texture that is characteristic of this medium. This artwork is a candidate for appraisal, offering both aesthetic appeal and potential value.
+
+**Input**: An image is a black-and-white photograph titled "Urban Silence," described as modernist art.
+
+**Output**: "Urban Silence" is a striking example of modernist art, presented through the lens of monochromatic photography. The stark contrast and minimalistic approach create a powerful composition that emphasizes the silence found amidst urban chaos. The photograph's design cleverly utilizes light and shadow, forming strong geometric shapes that guide the viewer's focus. As a photograph, the artwork captures the transient beauty of cityscapes. This piece is a candidate for appraisal, suggesting it may hold significant worth.
