@@ -248,10 +248,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
       });
       console.log('Image uploaded to GCS successfully.');
 
-      // Make the file publicly accessible (optional)
-      console.log('Making the uploaded image public...');
-      await file.makePublic();
-      console.log('Image is now public.');
+   
 
       customerImageUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${fileName}`;
       console.log(`Customer Image URL: ${customerImageUrl}`);
