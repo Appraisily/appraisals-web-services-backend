@@ -52,6 +52,9 @@ const loadSecrets = async () => {
     console.log('Loading secrets from Secret Manager...');
     GOOGLE_CLOUD_PROJECT_ID = await getSecret('GOOGLE_CLOUD_PROJECT_ID');
     SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Updated secret name
+    // Después de cargar SERVICE_ACCOUNT_JSON
+console.log(`Contents of SERVICE_ACCOUNT_JSON starts with: ${SERVICE_ACCOUNT_JSON.substring(0, 100)}...`);
+
     GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
     OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
     console.log('All secrets loaded successfully.');
