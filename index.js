@@ -54,6 +54,10 @@ const loadSecrets = async () => {
     SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Updated secret name
     // Después de cargar SERVICE_ACCOUNT_JSON
 console.log(`Contents of SERVICE_ACCOUNT_JSON starts with: ${SERVICE_ACCOUNT_JSON.substring(0, 100)}...`);
+if (!SERVICE_ACCOUNT_JSON.includes('"client_email": "appraisers-backend-service@civil-forge-403609.iam.gserviceaccount.com"')) {
+  console.error('El archivo SERVICE_ACCOUNT_JSON no contiene el client_email correcto.');
+  throw new Error('Credenciales de cuenta de servicio incorrectas.');
+}
 
     GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
     OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
