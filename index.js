@@ -9,22 +9,22 @@ const fs = require('fs').promises;
 const path = require('path');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 
-// Initialize Express app
+// Inicializar la aplicación Express
 const app = express();
 
-// Middleware to parse JSON
+// Middleware para parsear JSON
 app.use(express.json());
 
-// Enable CORS for all routes
+// Habilitar CORS para todas las rutas
 app.use(cors());
 
-// Initialize Secret Manager client
+// Inicializar el cliente de Secret Manager
 const secretClient = new SecretManagerServiceClient();
 
-// Function to get secret from Secret Manager
+// Función para obtener secretos de Secret Manager
 const getSecret = async (secretName) => {
   try {
-    const projectId = 'civil-forge-403609'; // Replace with your project ID
+    const projectId = 'civil-forge-403609'; // Reemplaza con tu ID de proyecto
     const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
 
     console.log(`Attempting to retrieve secret '${secretName}' from Secret Manager.`);
@@ -38,32 +38,29 @@ const getSecret = async (secretName) => {
   }
 };
 
-// Variables to store secrets
+// Variables para almacenar los secretos
 let GOOGLE_CLOUD_PROJECT_ID;
 let SERVICE_ACCOUNT_JSON;
 let GCS_BUCKET_NAME;
 let OPENAI_API_KEY;
 
-// Function to load all secrets at startup
+// Función para cargar todos los secretos al inicio
 const loadSecrets = async () => {
   try {
     console.log('Loading secrets from Secret Manager...');
     GOOGLE_CLOUD_PROJECT_ID = await getSecret('GOOGLE_CLOUD_PROJECT_ID');
-    SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Updated secret name
+    SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Nombre actualizado del secreto
     GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
     OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
     console.log('All secrets loaded successfully.');
 
-    // Write the service account JSON content to a temporary file
+    // Escribir el contenido del JSON de la cuenta de servicio en un archivo temporal
     const keyFilePath = path.join(__dirname, 'keyfile.json');
     console.log(`Writing service account JSON to ${keyFilePath}.`);
     await fs.writeFile(keyFilePath, SERVICE_ACCOUNT_JSON);
     console.log('Service account JSON written successfully.');
 
-    // Log the contents of SERVICE_ACCOUNT_JSON for debugging
-    console.log(`Contents of SERVICE_ACCOUNT_JSON starts with: ${SERVICE_ACCOUNT_JSON.substring(0, 100)}...`);
-
-    // Initialize Google Cloud Storage
+    // Inicializar Google Cloud Storage
     console.log('Initializing Google Cloud Storage client...');
     storage = new Storage({
       projectId: GOOGLE_CLOUD_PROJECT_ID,
@@ -74,7 +71,7 @@ const loadSecrets = async () => {
     bucket = storage.bucket(GCS_BUCKET_NAME);
     console.log(`Bucket set to: ${GCS_BUCKET_NAME}`);
 
-    // Verify bucket exists
+    // Verificar que el bucket existe
     try {
       const [exists] = await bucket.exists();
       if (exists) {
@@ -88,7 +85,7 @@ const loadSecrets = async () => {
       throw new Error(`Bucket '${GCS_BUCKET_NAME}' does not exist or is not accessible.`);
     }
 
-    // Initialize Google Vision Client
+    // Inicializar el cliente de Google Vision
     console.log('Initializing Google Vision client...');
     visionClient = new vision.ImageAnnotatorClient({
       projectId: GOOGLE_CLOUD_PROJECT_ID,
@@ -97,42 +94,41 @@ const loadSecrets = async () => {
     console.log('Google Vision client initialized.');
   } catch (error) {
     console.error('Error loading secrets:', error);
-    process.exit(1); // Exit if secrets could not be loaded
+    process.exit(1); // Salir si no se pudieron cargar los secretos
   }
 };
 
-// Initialize variables (will be set after loading secrets)
+// Variables inicializadas después de cargar los secretos
 let storage;
 let bucket;
 let visionClient;
 
-// Initialize Multer for file uploads
+// Inicializar Multer para cargas de archivos
 const upload = multer({
-  storage: multer.memoryStorage(), // Store files in memory temporarily
+  storage: multer.memoryStorage(), // Almacenar archivos en memoria temporalmente
 });
 
-// In-memory session store (replace with Redis for production)
+// Almacenamiento de sesiones en memoria (reemplazar con Redis para producción)
 const sessions = {};
 
-// Feature flag
-const USE_GOOGLE_CLOUD_STORAGE = true; // Set to true since we're using GCS
+// Función para generar texto con OpenAI
 const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
   // Construir el contenido del mensaje siguiendo la estructura correcta
   const messagesWithRoles = [
     {
-      role: "system",
-      content: "You are a professional art expert."
+      role: 'system',
+      content: 'You are a professional art expert.',
     },
     {
-      role: "user",
+      role: 'user',
       content: [
-        { type: "text", text: `Title: ${title}` },
-        ...(imageUrls.main ? [{ type: "image_url", image_url: { url: imageUrls.main } }] : []),
-        ...(imageUrls.age ? [{ type: "image_url", image_url: { url: imageUrls.age } }] : []),
-        ...(imageUrls.signature ? [{ type: "image_url", image_url: { url: imageUrls.signature } }] : []),
-        { type: "text", text: prompt }
-      ]
-    }
+        { type: 'text', text: `Title: ${title}` },
+        ...(imageUrls.main ? [{ type: 'image_url', image_url: { url: imageUrls.main } }] : []),
+        ...(imageUrls.age ? [{ type: 'image_url', image_url: { url: imageUrls.age } }] : []),
+        ...(imageUrls.signature ? [{ type: 'image_url', image_url: { url: imageUrls.signature } }] : []),
+        { type: 'text', text: prompt },
+      ],
+    },
   ];
 
   try {
@@ -140,14 +136,14 @@ const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini', // Usando el modelo indicado
         messages: messagesWithRoles,
         max_tokens: 500,
-        temperature: 0.7
-      })
+        temperature: 0.7,
+      }),
     });
 
     if (!response.ok) {
@@ -191,34 +187,34 @@ app.post('/enhance-analysis', async (req, res) => {
 
     console.log(`Processing enhanced analysis for sessionId: ${sessionId}`);
 
-    // Retrieve session data
+    // Recuperar datos de sesión
     const { customerImageUrl } = sessions[sessionId];
     console.log('Session data retrieved:', { customerImageUrl });
 
-    // Read the prompt template from 'conclusion.txt'
+    // Leer la plantilla de prompt desde 'conclusion.txt'
     const promptFilePath = path.join(__dirname, 'prompts', 'conclusion.txt');
     console.log(`Reading prompt file from ${promptFilePath}.`);
     const promptTemplate = await fs.readFile(promptFilePath, 'utf8');
 
-    // Prepare image URLs
+    // Preparar URLs de imágenes
     const imageUrls = {
       main: customerImageUrl,
-      // Add other images if needed
+      // Agregar otras imágenes si es necesario
       // age: 'url_of_age_image',
       // signature: 'url_of_signature_image',
     };
 
-    // Generate the final prompt by replacing placeholders
+    // Generar el prompt final reemplazando marcadores
     const prompt = promptTemplate.replace('{{analysisText}}', analysisText);
 
-    // Set the title or other necessary parameters
+    // Establecer el título u otros parámetros necesarios
     const title = 'Enhanced Artwork Analysis';
 
-    // Call OpenAI with the prompt, title, and image URLs
+    // Llamar a OpenAI con el prompt, título y URLs de imágenes
     const enhancedText = await generateTextWithOpenAI(prompt, title, imageUrls);
     console.log('Received enhanced text from OpenAI.');
 
-    // Return the generated enhanced analysis to the client
+    // Devolver el análisis mejorado al cliente
     res.json({
       success: true,
       message: 'Enhanced analysis generated successfully.',
@@ -229,7 +225,7 @@ app.post('/enhance-analysis', async (req, res) => {
   } catch (error) {
     console.error('Error generating enhanced analysis:', error);
 
-    // Send a more detailed response only in development environments
+    // Enviar una respuesta más detallada solo en entornos de desarrollo
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     res.status(500).json({
@@ -240,9 +236,7 @@ app.post('/enhance-analysis', async (req, res) => {
   }
 });
 
-
-
-// Function to analyze image with Google Vision
+// Función para analizar imágenes con Google Vision
 const analyzeImageWithGoogleVision = async (imageUri) => {
   try {
     console.log(`Analyzing image with Google Vision API: ${imageUri}`);
@@ -255,7 +249,7 @@ const analyzeImageWithGoogleVision = async (imageUri) => {
 
     console.log('Google Vision web detection results obtained.');
 
-    // Extract labels and web entities
+    // Extraer etiquetas y entidades web
     const labels = webDetection.webEntities
       .filter((entity) => entity.description)
       .map((entity) => entity.description);
@@ -267,17 +261,17 @@ const analyzeImageWithGoogleVision = async (imageUri) => {
   }
 };
 
-// Function to generate prompt for OpenAI
+// Función para generar el prompt para OpenAI
 const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
   try {
     const promptFilePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
     console.log(`Reading prompt file from ${promptFilePath}.`);
     let prompt = await fs.readFile(promptFilePath, 'utf8');
 
-    // Replace placeholders in the prompt
+    // Reemplazar marcadores en el prompt
     prompt = prompt.replace('{{customerImageUrl}}', customerImageUrl);
 
-    // Handle similar image URLs
+    // Manejar URLs de imágenes similares
     let similarImagesText;
     if (similarImageUrls.length > 0) {
       similarImagesText = similarImageUrls.map((url, index) => `${index + 1}. ${url}`).join('\n');
@@ -286,7 +280,7 @@ const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
     }
     prompt = prompt.replace('{{similarImageUrls}}', similarImagesText);
 
-    // Handle labels/descriptions from Google Vision
+    // Manejar etiquetas/descripciones de Google Vision
     let labelsText;
     if (labels && labels.length > 0) {
       labelsText = labels.join(', ');
@@ -303,14 +297,12 @@ const generatePrompt = async (customerImageUrl, similarImageUrls, labels) => {
   }
 };
 
-
-
 // Endpoint: Upload Image and Get Similar Images
 app.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
     console.log('Received request to /upload-image endpoint.');
 
-    // Step 1: Retrieve the uploaded image
+    // Paso 1: Recuperar la imagen subida
     if (!req.file) {
       console.warn('No file uploaded in the request.');
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -327,7 +319,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
     let customerImageUrl;
 
     if (USE_GOOGLE_CLOUD_STORAGE) {
-      // Step 2A: Upload to GCS
+      // Paso 2A: Subir a GCS
       console.log('Uploading image to Google Cloud Storage...');
       await file.save(imageBuffer, {
         resumable: false,
@@ -338,21 +330,19 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
       });
       console.log('Image uploaded to GCS successfully.');
 
-   
-
       customerImageUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${fileName}`;
       console.log(`Customer Image URL: ${customerImageUrl}`);
     } else {
-      // Step 2B: Upload to WordPress (existing functionality)
-      // Implement uploadImageToWordPress if needed
+      // Paso 2B: Subir a WordPress (funcionalidad existente)
+      // Implementar uploadImageToWordPress si es necesario
       throw new Error('WordPress upload not implemented.');
     }
 
-    // Step 3: Analyze the image with Google Vision API
+    // Paso 3: Analizar la imagen con Google Vision API
     console.log('Analyzing the uploaded image with Google Vision API...');
     const { webDetection, labels } = await analyzeImageWithGoogleVision(customerImageUrl);
 
-    // Step 4: Extract similar image URLs from Google Vision's response
+    // Paso 4: Extraer URLs de imágenes similares de la respuesta de Google Vision
     console.log('Extracting similar image URLs from Google Vision response...');
     const similarImageUrls = webDetection.visuallySimilarImages
       .map((image) => image.url)
@@ -360,7 +350,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
 
     console.log('Similar images found:', similarImageUrls);
 
-    // Step 5: Store session data
+    // Paso 5: Almacenar datos de sesión
     const sessionId = uuidv4();
     sessions[sessionId] = {
       customerImageUrl,
@@ -370,7 +360,7 @@ app.post('/upload-image', upload.single('image'), async (req, res) => {
     };
     console.log(`Session data stored with sessionId: ${sessionId}`);
 
-    // Step 6: Return the similar images and session ID to the client
+    // Paso 6: Devolver las imágenes similares y el ID de sesión al cliente
     res.json({
       success: true,
       message: 'Image processed successfully.',
@@ -411,19 +401,22 @@ app.post('/generate-analysis', async (req, res) => {
 
     console.log(`Processing analysis for sessionId: ${sessionId}`);
 
-    // Retrieve session data
+    // Recuperar datos de sesión
     const { customerImageUrl, similarImageUrls, labels } = sessions[sessionId];
     console.log('Session data retrieved:', { customerImageUrl, similarImageUrls, labels });
 
-    // Construir el prompt
+    // Leer el archivo de plantilla de prompt
     const promptFilePath = path.join(__dirname, 'prompts', 'front-image-test.txt');
     console.log(`Reading prompt file from ${promptFilePath}.`);
-    const prompt = await fs.readFile(promptFilePath, 'utf8');
+    const promptTemplate = await fs.readFile(promptFilePath, 'utf8');
 
-    // Preparar los URLs de imágenes
+    // Generar el prompt
+    const prompt = await generatePrompt(customerImageUrl, similarImageUrls, labels);
+
+    // Preparar URLs de imágenes
     const imageUrls = {
       main: customerImageUrl,
-      // Si tienes otras imágenes, puedes agregarlas aquí
+      // Agregar otras imágenes si es necesario
       // age: 'url_de_la_imagen_de_edad',
       // signature: 'url_de_la_imagen_de_firma',
     };
@@ -433,11 +426,7 @@ app.post('/generate-analysis', async (req, res) => {
     const generatedText = await generateTextWithOpenAI(prompt, title, imageUrls);
     console.log('Received generated text from OpenAI.');
 
-    // Clean up the session data
-    delete sessions[sessionId];
-    console.log(`Session data for sessionId ${sessionId} has been cleaned up.`);
-
-    // Return the generated analysis to the client
+    // Devolver el análisis generado al cliente
     res.json({
       success: true,
       message: 'Analysis generated successfully.',
@@ -459,8 +448,7 @@ app.post('/generate-analysis', async (req, res) => {
   }
 });
 
-
-// Start the server after loading secrets
+// Iniciar el servidor después de cargar los secretos
 loadSecrets().then(() => {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
