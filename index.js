@@ -1,5 +1,3 @@
-// index.js.
-
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -52,13 +50,6 @@ const loadSecrets = async () => {
     console.log('Loading secrets from Secret Manager...');
     GOOGLE_CLOUD_PROJECT_ID = await getSecret('GOOGLE_CLOUD_PROJECT_ID');
     SERVICE_ACCOUNT_JSON = await getSecret('service-account-json'); // Updated secret name
-    // Después de cargar SERVICE_ACCOUNT_JSON
-console.log(`Contents of SERVICE_ACCOUNT_JSON starts with: ${SERVICE_ACCOUNT_JSON.substring(0, 100)}...`);
-if (!SERVICE_ACCOUNT_JSON.includes('"client_email": "appraisers-backend-service@civil-forge-403609.iam.gserviceaccount.com"')) {
-  console.error('El archivo SERVICE_ACCOUNT_JSON no contiene el client_email correcto.');
-  throw new Error('Credenciales de cuenta de servicio incorrectas.');
-}
-
     GCS_BUCKET_NAME = await getSecret('GCS_BUCKET_NAME');
     OPENAI_API_KEY = await getSecret('OPENAI_API_KEY');
     console.log('All secrets loaded successfully.');
@@ -68,6 +59,9 @@ if (!SERVICE_ACCOUNT_JSON.includes('"client_email": "appraisers-backend-service@
     console.log(`Writing service account JSON to ${keyFilePath}.`);
     await fs.writeFile(keyFilePath, SERVICE_ACCOUNT_JSON);
     console.log('Service account JSON written successfully.');
+
+    // Log the contents of SERVICE_ACCOUNT_JSON for debugging
+    console.log(`Contents of SERVICE_ACCOUNT_JSON starts with: ${SERVICE_ACCOUNT_JSON.substring(0, 100)}...`);
 
     // Initialize Google Cloud Storage
     console.log('Initializing Google Cloud Storage client...');
@@ -82,10 +76,15 @@ if (!SERVICE_ACCOUNT_JSON.includes('"client_email": "appraisers-backend-service@
 
     // Verify bucket exists
     try {
-      await bucket.exists();
-      console.log(`Bucket '${GCS_BUCKET_NAME}' exists and is accessible.`);
+      const [exists] = await bucket.exists();
+      if (exists) {
+        console.log(`Bucket '${GCS_BUCKET_NAME}' exists and is accessible.`);
+      } else {
+        console.error(`Bucket '${GCS_BUCKET_NAME}' does not exist.`);
+        throw new Error(`Bucket '${GCS_BUCKET_NAME}' does not exist.`);
+      }
     } catch (bucketError) {
-      console.error(`Bucket '${GCS_BUCKET_NAME}' does not exist or is not accessible:`, bucketError);
+      console.error(`Error accessing bucket '${GCS_BUCKET_NAME}':`, bucketError);
       throw new Error(`Bucket '${GCS_BUCKET_NAME}' does not exist or is not accessible.`);
     }
 
