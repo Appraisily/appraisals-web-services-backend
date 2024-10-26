@@ -192,10 +192,10 @@ app.post('/enhance-analysis', async (req, res) => {
     const { customerImageUrl } = sessions[sessionId];
     console.log('Session data retrieved:', { customerImageUrl });
 
-    // Leer la plantilla de prompt desde 'conclusion.txt'
-    const promptFilePath = path.join(__dirname, 'prompts', 'conclusion.txt');
-    console.log(`Reading prompt file from ${promptFilePath}.`);
-    const promptTemplate = await fs.readFile(promptFilePath, 'utf8');
+    // Leer la plantilla de prompt desde 'conclusion.txt' para la primera llamada
+    const conclusionPromptPath = path.join(__dirname, 'prompts', 'conclusion.txt');
+    console.log(`Reading prompt file from ${conclusionPromptPath}.`);
+    const conclusionPromptTemplate = await fs.readFile(conclusionPromptPath, 'utf8');
 
     // Preparar URLs de imágenes
     const imageUrls = {
@@ -205,37 +205,53 @@ app.post('/enhance-analysis', async (req, res) => {
       // signature: 'url_of_signature_image',
     };
 
-    // Generar el prompt final reemplazando marcadores
-    const prompt = promptTemplate.replace('{{analysisText}}', analysisText);
+    // Generar el prompt final para la primera llamada reemplazando marcadores
+    const conclusionPrompt = conclusionPromptTemplate.replace('{{analysisText}}', analysisText);
 
     // Establecer el título u otros parámetros necesarios
     const title = 'Enhanced Artwork Analysis';
 
-    // Llamar a OpenAI con el prompt, título y URLs de imágenes
-    const enhancedText = await generateTextWithOpenAI(prompt, title, imageUrls);
-    console.log('Received enhanced text from OpenAI.');
+    // Llamar a OpenAI con el prompt, título y URLs de imágenes (Primera llamada)
+    const enhancedText = await generateTextWithOpenAI(conclusionPrompt, title, imageUrls);
+    console.log('Received enhanced text from OpenAI (First Call).');
 
-    // Devolver el análisis mejorado al cliente
+    // Leer la plantilla de prompt desde 'offer.txt' para la segunda llamada
+    const offerPromptPath = path.join(__dirname, 'prompts', 'offer.txt');
+    console.log(`Reading prompt file from ${offerPromptPath}.`);
+    const offerPromptTemplate = await fs.readFile(offerPromptPath, 'utf8');
+
+    // Generar el prompt final para la segunda llamada reemplazando marcadores
+    const offerPrompt = offerPromptTemplate
+      .replace('{{customerImageUrl}}', customerImageUrl)
+      .replace('{{enhancedText}}', enhancedText);
+
+    // Llamar a OpenAI con el prompt de 'offer.txt' (Segunda llamada)
+    const offerText = await generateTextWithOpenAI(offerPrompt, 'Artwork Offer', imageUrls);
+    console.log('Received offer text from OpenAI (Second Call).');
+
+    // Devolver el texto generado por la segunda llamada al cliente
     res.json({
       success: true,
-      message: 'Enhanced analysis generated successfully.',
+      message: 'Offer generated successfully.',
       enhancedAnalysis: enhancedText,
+      offerText: offerText,
     });
 
-    console.log('Enhanced analysis response sent to client successfully.');
+    console.log('Offer response sent to client successfully.');
   } catch (error) {
-    console.error('Error generating enhanced analysis:', error);
+    console.error('Error generating offer:', error);
 
     // Enviar una respuesta más detallada solo en entornos de desarrollo
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     res.status(500).json({
       success: false,
-      message: 'Error generating enhanced analysis.',
+      message: 'Error generating offer.',
       error: isDevelopment ? error.message : 'Internal Server Error.',
     });
   }
 });
+
 
 // Función para analizar imágenes con Google Vision
 const analyzeImageWithGoogleVision = async (imageUri) => {
