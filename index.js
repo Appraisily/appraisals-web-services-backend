@@ -166,6 +166,81 @@ const generateTextWithOpenAI = async (prompt, title, imageUrls) => {
   }
 };
 
+// Endpoint: Enhance Analysis with OpenAI
+app.post('/enhance-analysis', async (req, res) => {
+  try {
+    console.log('Received request to /enhance-analysis endpoint.');
+
+    const { sessionId, analysisText } = req.body;
+
+    if (!sessionId || !sessions[sessionId]) {
+      console.warn('Invalid or missing sessionId in the request.');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or missing sessionId.',
+      });
+    }
+
+    if (!analysisText) {
+      console.warn('Missing analysisText in the request.');
+      return res.status(400).json({
+        success: false,
+        message: 'Missing analysisText.',
+      });
+    }
+
+    console.log(`Processing enhanced analysis for sessionId: ${sessionId}`);
+
+    // Retrieve session data
+    const { customerImageUrl } = sessions[sessionId];
+    console.log('Session data retrieved:', { customerImageUrl });
+
+    // Read the prompt template from 'conclusion.txt'
+    const promptFilePath = path.join(__dirname, 'prompts', 'conclusion.txt');
+    console.log(`Reading prompt file from ${promptFilePath}.`);
+    const promptTemplate = await fs.readFile(promptFilePath, 'utf8');
+
+    // Prepare image URLs
+    const imageUrls = {
+      main: customerImageUrl,
+      // Add other images if needed
+      // age: 'url_of_age_image',
+      // signature: 'url_of_signature_image',
+    };
+
+    // Generate the final prompt by replacing placeholders
+    const prompt = promptTemplate.replace('{{analysisText}}', analysisText);
+
+    // Set the title or other necessary parameters
+    const title = 'Enhanced Artwork Analysis';
+
+    // Call OpenAI with the prompt, title, and image URLs
+    const enhancedText = await generateTextWithOpenAI(prompt, title, imageUrls);
+    console.log('Received enhanced text from OpenAI.');
+
+    // Return the generated enhanced analysis to the client
+    res.json({
+      success: true,
+      message: 'Enhanced analysis generated successfully.',
+      enhancedAnalysis: enhancedText,
+    });
+
+    console.log('Enhanced analysis response sent to client successfully.');
+  } catch (error) {
+    console.error('Error generating enhanced analysis:', error);
+
+    // Send a more detailed response only in development environments
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    res.status(500).json({
+      success: false,
+      message: 'Error generating enhanced analysis.',
+      error: isDevelopment ? error.message : 'Internal Server Error.',
+    });
+  }
+});
+
+
 
 // Function to analyze image with Google Vision
 const analyzeImageWithGoogleVision = async (imageUri) => {
