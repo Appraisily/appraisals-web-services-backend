@@ -1,5 +1,6 @@
 const { Storage } = require('@google-cloud/storage');
 const vision = require('@google-cloud/vision');
+const openai = require('./openai');
 
 class CloudServices {
   constructor() {
@@ -8,7 +9,7 @@ class CloudServices {
     this.visionClient = null;
   }
 
-  async initialize(projectId, keyFilePath, bucketName) {
+  async initialize(projectId, keyFilePath, bucketName, openaiApiKey) {
     try {
       // Initialize Google Cloud Storage
       console.log('Initializing Google Cloud Storage client...');
@@ -35,6 +36,11 @@ class CloudServices {
         keyFilename: keyFilePath,
       });
       console.log('Google Vision client initialized.');
+      // Initialize OpenAI client
+      console.log('Initializing OpenAI client...');
+      openai.initialize(openaiApiKey);
+      console.log('OpenAI client initialized.');
+
     } catch (error) {
       console.error('Error initializing cloud services:', error);
       throw error;

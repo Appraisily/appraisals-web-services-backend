@@ -1,6 +1,7 @@
 const express = require('express');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
+const openai = require('../services/openai');
 
 const router = express.Router();
 
@@ -44,45 +45,69 @@ router.post('/visual-search', async (req, res) => {
     }
 
     console.log('Initiating Google Vision web detection...');
+    console.log('Initiating OpenAI Vision analysis...');
     
-    const visionClient = cloudServices.getVisionClient();
-    const [result] = await visionClient.webDetection({
-      image: {
-        source: {
-          imageUri: metadata.imageUrl
-        }
-      },
-      imageContext: {
-        webDetectionParams: {
-          includeGeoResults: false
-        }
-      },
-    });
+    // Run both analyses in parallel
+    const [visionResult, openaiAnalysis] = await Promise.all([
+      cloudServices.getVisionClient().webDetection({
+        image: {
+          source: {
+            imageUri: metadata.imageUrl
+          }
+        },
+        imageContext: {
+          webDetectionParams: {
+            includeGeoResults: false
+          }
+        },
+      }),
+      openai.analyzeImage(metadata.imageUrl)
+    ]);
 
-    const webDetection = result.webDetection;
+    const webDetection = visionResult[0].webDetection;
 
     const formattedResults = {
+      webEntities: (webDetection.webEntities || []).map(entity => ({
+        entityId: entity.entityId,
+        score: entity.score,
+        description: entity.description
+      })),
       description: {
         labels: webDetection.bestGuessLabels?.map(label => label.label) || [],
         confidence: webDetection.bestGuessLabels?.[0]?.score || 0
       },
+      pagesWithMatchingImages: (webDetection.pagesWithMatchingImages || []).map(page => ({
+        url: page.url,
+        pageTitle: page.pageTitle,
+        fullMatchingImages: page.fullMatchingImages || [],
+        partialMatchingImages: page.partialMatchingImages || []
+      })),
       matches: {
         exact: (webDetection.fullMatchingImages || []).map(img => ({
           url: img.url,
           score: img.score || 1.0,
-          type: 'exact'
+          type: 'exact',
+          metadata: img.metadata || {}
         })),
         partial: (webDetection.partialMatchingImages || []).map(img => ({
           url: img.url,
           score: img.score || 0.5,
-          type: 'partial'
+          type: 'partial',
+          metadata: img.metadata || {}
         })),
         similar: (webDetection.visuallySimilarImages || []).map(img => ({
           url: img.url,
           score: img.score || 0.3,
-          type: 'similar'
+          type: 'similar',
+          metadata: img.metadata || {}
         }))
-      }
+      },
+      derivedSubjects: webDetection.derivedSubjects || [],
+      webLabels: (webDetection.webLabels || []).map(label => ({
+        label: label.label,
+        score: label.score,
+        languages: label.languages || []
+      }))
     };
 
     // Update metadata to mark image as analyzed
@@ -90,11 +115,15 @@ router.post('/visual-search', async (req, res) => {
     metadata.analysisTimestamp = Date.now();
     metadata.analysisResults = {
       labels: formattedResults.description.labels,
+      webEntities: formattedResults.webEntities.length,
       matchCounts: {
         exact: formattedResults.matches.exact.length,
         partial: formattedResults.matches.partial.length,
         similar: formattedResults.matches.similar.length
-      }
+      },
+      pagesWithMatches: formattedResults.pagesWithMatchingImages.length,
+      webLabels: formattedResults.webLabels.length,
+      openaiAnalysis: openaiAnalysis
     };
 
     // Save updated metadata
@@ -108,14 +137,20 @@ router.post('/visual-search', async (req, res) => {
     console.log('Web detection completed successfully');
     console.log(`Analysis results:
       Labels: ${formattedResults.description.labels.length}
+      Web Entities: ${formattedResults.webEntities.length}
       Exact matches: ${formattedResults.matches.exact.length}
       Partial matches: ${formattedResults.matches.partial.length}
-      Similar images: ${formattedResults.matches.similar.length}`);
+      Similar images: ${formattedResults.matches.similar.length}
+      Pages with matches: ${formattedResults.pagesWithMatchingImages.length}
+      Web labels: ${formattedResults.webLabels.length}`);
 
     res.json({
       success: true,
       message: 'Visual search completed successfully.',
-      results: formattedResults,
+      results: {
+        vision: formattedResults,
+        openai: openaiAnalysis
+      },
       analyzed: true,
       analysisTimestamp: metadata.analysisTimestamp
     });
