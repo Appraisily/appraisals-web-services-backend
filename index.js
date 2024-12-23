@@ -16,8 +16,25 @@ const app = express();
 // Middleware for parsing JSON
 app.use(express.json());
 
-// Enable CORS for all routes
-app.use(cors());
+// Enable CORS for WebContainer domains and localhost
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow WebContainer domains and localhost
+    if (
+      origin.includes('.webcontainer-api.io') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 
 // Initialize Secret Manager client
 const secretClient = new SecretManagerServiceClient();
@@ -108,7 +125,7 @@ let visionClient;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   },
 });
 
@@ -137,7 +154,7 @@ app.post('/upload-temp', upload.single('image'), async (req, res) => {
     if (!allowedMimeTypes.includes(req.file.mimetype)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+        message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed. Maximum file size is 10MB.'
       });
     }
 
