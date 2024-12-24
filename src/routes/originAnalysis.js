@@ -49,6 +49,16 @@ router.post('/origin-analysis', async (req, res) => {
     const metadata = JSON.parse(metadataContent.toString());
     const analysis = JSON.parse(analysisContent.toString());
 
+    // Debug logging for URLs
+    console.log('\nURLs to process:');
+    console.log('---------------');
+    console.log('User Image:', metadata.imageUrl);
+    console.log('\nSimilar Images:');
+    (analysis.vision.matches.similar || []).forEach((img, index) => {
+      console.log(`${index + 1}. ${img.url} (score: ${img.score || 'N/A'})`);
+    });
+    console.log('---------------\n');
+
     // Extract similar images from the analysis
     const similarImages = analysis.vision.matches.similar || [];
 
@@ -75,7 +85,8 @@ Provide your analysis in JSON format:
     const originAnalysis = await openai.analyzeOrigin(
       metadata.imageUrl,
       similarImages,
-      originPrompt
+      originPrompt,
+      'ORIGIN' // Explicitly specify the model type
     );
 
     // Log available variables

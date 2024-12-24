@@ -27,26 +27,17 @@ class CloudServices {
       if (!exists) {
         throw new Error(`Bucket '${bucketName}' does not exist.`);
       }
-      
-      // Configure bucket for public access
-      try {
-        await this.bucket.makePublic();
-        console.log('Bucket configured for public access');
 
-        // Set CORS policy
-        await this.bucket.setCorsConfiguration([
-          {
-            maxAgeSeconds: 3600,
-            method: ['GET', 'HEAD'],
-            origin: ['*'],
-            responseHeader: ['Content-Type']
-          }
-        ]);
-        console.log('Bucket CORS configuration updated');
-      } catch (error) {
-        console.warn('Warning: Could not configure bucket public access:', error);
-        // Continue execution as the bucket might already be configured
-      }
+      // Set CORS policy
+      await this.bucket.setCorsConfiguration([
+        {
+          maxAgeSeconds: 3600,
+          method: ['GET', 'HEAD'],
+          origin: ['*'],
+          responseHeader: ['Content-Type']
+        }
+      ]);
+      console.log('Bucket CORS configuration updated');
 
       console.log(`Bucket '${bucketName}' exists and is accessible.`);
 
