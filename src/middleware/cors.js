@@ -4,13 +4,15 @@ const corsMiddleware = cors({
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
     
-    if (
-      origin.includes('.webcontainer-api.io') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-      origin.includes('.run.app') ||
-      origin.includes('stackblitz.io')
-    ) {
+    const allowedDomains = [
+      '.webcontainer-api.io',
+      'localhost',
+      '127.0.0.1',
+      '.run.app',
+      'stackblitz.io'
+    ];
+    
+    if (allowedDomains.some(domain => origin.includes(domain))) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
