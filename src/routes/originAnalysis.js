@@ -1,6 +1,7 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
+const { filterValidImageUrls } = require('../utils/urlValidator');
 
 const router = express.Router();
 
@@ -60,7 +61,10 @@ router.post('/origin-analysis', async (req, res) => {
     console.log('---------------\n');
 
     // Extract similar images from the analysis
-    const similarImages = analysis.vision.matches.similar || [];
+    const allSimilarImages = analysis.vision.matches.similar || [];
+    
+    // Filter and validate similar image URLs before sending to OpenAI
+    const validSimilarImages = await filterValidImageUrls(allSimilarImages);
 
     // Create the prompt for origin analysis
     const originPrompt = `You are an expert art appraiser with access to computer vision technology. 
@@ -84,7 +88,7 @@ Provide your analysis in JSON format:
     // Call OpenAI with the user's image and similar images
     const originAnalysis = await openai.analyzeOrigin(
       metadata.imageUrl,
-      similarImages,
+      validSimilarImages,
       originPrompt,
       'ORIGIN' // Explicitly specify the model type
     );
