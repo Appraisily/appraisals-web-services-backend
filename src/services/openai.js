@@ -54,9 +54,22 @@ Do not include any additional commentary or text.`;
         temperature: 0.7
       });
 
+      // Debug logging
+      console.log('OpenAI raw response:', response);
+      console.log('Response choices:', response.choices);
+      console.log('First choice message:', response.choices[0]?.message);
+      console.log('Content to parse:', response.choices[0]?.message?.content);
+
       // Parse the JSON response
       const content = response.choices[0]?.message?.content || '{}';
+      
+      try {
       return JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON Parse Error. Content:', content);
+        console.error('Parse error details:', parseError);
+        throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
+      }
     } catch (error) {
       console.error('Error analyzing image with OpenAI:', error);
       throw error;
