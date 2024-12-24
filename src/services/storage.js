@@ -27,18 +27,6 @@ class CloudServices {
       if (!exists) {
         throw new Error(`Bucket '${bucketName}' does not exist.`);
       }
-
-      // Set CORS policy
-      await this.bucket.setCorsConfiguration([
-        {
-          maxAgeSeconds: 3600,
-          method: ['GET', 'HEAD'],
-          origin: ['*'],
-          responseHeader: ['Content-Type']
-        }
-      ]);
-      console.log('Bucket CORS configuration updated');
-
       console.log(`Bucket '${bucketName}' exists and is accessible.`);
 
       // Initialize Vision client
