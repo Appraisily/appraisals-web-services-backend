@@ -61,10 +61,13 @@ Do not include any additional commentary or text.`;
       console.log('Content to parse:', response.choices[0]?.message?.content);
 
       // Parse the JSON response
-      const content = response.choices[0]?.message?.content || '{}';
+      let content = response.choices[0]?.message?.content || '{}';
+      
+      // Remove markdown code block delimiters if present
+      content = content.replace(/```json\n?|\n?```/g, '').trim();
       
       try {
-      return JSON.parse(content);
+        return JSON.parse(content);
       } catch (parseError) {
         console.error('JSON Parse Error. Content:', content);
         console.error('Parse error details:', parseError);
