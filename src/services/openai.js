@@ -1,8 +1,8 @@
 const OpenAI = require('openai');
 
 const MODELS = {
-  VISUAL_SEARCH: 'gpt-4o',
-  ORIGIN: 'o1'
+  VISUAL_SEARCH: 'gpt-4-vision-preview',
+  ORIGIN: 'gpt-4-vision-preview'
 };
 
 class OpenAIService {
@@ -14,9 +14,7 @@ class OpenAIService {
     return MODELS[type] || MODELS.VISUAL_SEARCH;
   }
 
-  initialize(apiKey) {
-    this.client = new OpenAI({
-      apiKey: apiKey
+      ]
     });
   }
 
@@ -45,7 +43,6 @@ class OpenAIService {
             ]
           }
         ],
-        max_tokens: 150,
         temperature: 0.7
       });
 
