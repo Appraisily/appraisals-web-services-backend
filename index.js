@@ -5,6 +5,7 @@ const corsMiddleware = require('./src/middleware/cors');
 const uploadRouter = require('./src/routes/upload');
 const encryption = require('./src/services/encryption');
 const visualSearchRouter = require('./src/routes/visualSearch');
+const originAnalysisRouter = require('./src/routes/originAnalysis');
 const emailRouter = require('./src/routes/email');
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(corsMiddleware);
 // Mount routes
 app.use(uploadRouter);
 app.use(visualSearchRouter);
+app.use(originAnalysisRouter);
 app.use(emailRouter);
 
 // Initialize application
