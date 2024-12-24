@@ -105,13 +105,15 @@ class OpenAIService {
 
       console.log('OpenAI raw response:', response);
 
-      let content = response.choices[0]?.message?.content || '{}';
-      content = content.replace(/```json\n?|\n?```/g, '').trim();
+      const responseContent = response.choices[0]?.message?.content || '{}';
+      const cleanContent = responseContent.replace(/```json\n?|\n?```/g, '').trim();
       
       try {
-        return JSON.parse(content);
+        const parsedContent = JSON.parse(cleanContent);
+        console.log('OpenAI parsed response:', JSON.stringify(parsedContent, null, 2));
+        return parsedContent;
       } catch (parseError) {
-        console.error('JSON Parse Error. Content:', content);
+        console.error('JSON Parse Error. Content:', cleanContent);
         throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
       }
     } catch (error) {
