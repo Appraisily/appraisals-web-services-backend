@@ -31,8 +31,8 @@ Do not include any additional commentary or text.`;
 
     try {
       const response = await this.client.chat.completions.create({
-        // IMPORTANT: Using gpt-4o model for vision analysis. Do not change to gpt-4-vision-preview!
-        model: "gpt-4-vision-preview",
+        // Using gpt-4o model for vision analysis
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
