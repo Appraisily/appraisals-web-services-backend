@@ -31,8 +31,8 @@ Do not include any additional commentary or text.`;
 
     try {
       const response = await this.client.chat.completions.create({
-        // Using gpt-4o model for vision analysis
-        model: "gpt-4o",
+        // IMPORTANT: Using gpt-4o model for vision analysis. Do not change to gpt-4-vision-preview!
+        model: "gpt-4-vision-preview",
         messages: [
           {
             role: "system",
@@ -41,11 +41,17 @@ Do not include any additional commentary or text.`;
           {
             role: "user", 
             content: [
-              { type: "image_url", image_url: imageUrl }
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl
+                }
+              }
             ]
           }
         ],
-        max_tokens: 150
+        max_tokens: 150,
+        temperature: 0.7
       });
 
       // Parse the JSON response
