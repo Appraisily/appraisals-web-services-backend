@@ -3,7 +3,9 @@ const { loadSecrets } = require('./src/config/secrets');
 const cloudServices = require('./src/services/storage');
 const corsMiddleware = require('./src/middleware/cors');
 const uploadRouter = require('./src/routes/upload');
+const encryption = require('./src/services/encryption');
 const visualSearchRouter = require('./src/routes/visualSearch');
+const emailRouter = require('./src/routes/email');
 
 const app = express();
 
@@ -13,6 +15,7 @@ app.use(corsMiddleware);
 // Mount routes
 app.use(uploadRouter);
 app.use(visualSearchRouter);
+app.use(emailRouter);
 
 // Initialize application
 const init = async () => {
@@ -24,6 +27,9 @@ const init = async () => {
       secrets.GCS_BUCKET_NAME,
       secrets.OPENAI_API_KEY
     );
+
+    // Initialize encryption service
+    encryption.initialize(secrets.EMAIL_ENCRYPTION_KEY);
 
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {

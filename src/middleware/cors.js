@@ -9,7 +9,9 @@ const corsMiddleware = cors({
       'localhost',
       '127.0.0.1',
       '.run.app',
-      'stackblitz.io'
+      'stackblitz.io',
+      'stackblitz.com',
+      'appraisily.com'
     ];
     
     if (allowedDomains.some(domain => origin.includes(domain))) {

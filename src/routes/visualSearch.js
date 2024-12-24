@@ -110,6 +110,29 @@ router.post('/visual-search', async (req, res) => {
       }))
     };
 
+    // Save complete analysis results to a dedicated file
+    const analysisResults = {
+      timestamp: Date.now(),
+      vision: formattedResults,
+      openai: openaiAnalysis,
+      metadata: {
+        imageUrl: metadata.imageUrl,
+        originalName: metadata.originalName,
+        mimeType: metadata.mimeType,
+        size: metadata.size
+      }
+    };
+
+    const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
+    await analysisFile.save(JSON.stringify(analysisResults, null, 2), {
+      contentType: 'application/json',
+      metadata: {
+        cacheControl: 'no-cache'
+      }
+    });
+
+    console.log(`Analysis results saved to sessions/${sessionId}/analysis.json`);
+
     // Update metadata to mark image as analyzed
     metadata.analyzed = true;
     metadata.analysisTimestamp = Date.now();
