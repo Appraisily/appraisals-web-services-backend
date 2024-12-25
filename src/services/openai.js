@@ -1,9 +1,5 @@
 const OpenAI = require('openai');
-
-const MODELS = {
-  VISUAL_SEARCH: 'gpt-4-vision-preview',
-  ORIGIN: 'gpt-4-vision-preview'
-};
+const { getModel } = require('../config/models');
 
 class OpenAIService {
   constructor() {
@@ -17,10 +13,6 @@ class OpenAIService {
     this.client = new OpenAI({ apiKey });
   }
 
-  getModel(type) {
-    return MODELS[type] || MODELS.VISUAL_SEARCH;
-  }
-
   async analyzeImage(imageUrl, prompt, modelType = 'VISUAL_SEARCH') {
     if (!this.client) {
       throw new Error('OpenAI client not initialized');
@@ -28,7 +20,7 @@ class OpenAIService {
 
     try {
       const response = await this.client.chat.completions.create({
-        model: this.getModel(modelType),
+        model: getModel(modelType),
         messages: [
           {
             role: "system",
@@ -88,7 +80,7 @@ class OpenAIService {
       });
 
       const response = await this.client.chat.completions.create({
-        model: this.getModel('ORIGIN'),
+        model: getModel('ORIGIN'),
         messages: [
           {
             role: "system",

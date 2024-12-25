@@ -2,136 +2,174 @@
 
 A robust Node.js backend service for art and antique image analysis using Google Cloud Vision API and OpenAI Vision.
 
-## Features
+## Core Features
 
-### Image Upload and Session Management
-- Secure temporary image upload with session-based tracking
-- Support for JPEG, PNG, and WebP formats
-- 10MB file size limit
-- Automatic session metadata management
-- Google Cloud Storage integration for reliable file storage
+### Image Analysis
+- Dual analysis system using Google Cloud Vision and OpenAI Vision
+- Origin analysis for artwork authenticity
+- Visual similarity search
+- Comprehensive image metadata extraction
 
-### Visual Analysis
-- **Dual Analysis System**
-  - Google Cloud Vision web detection
-  - OpenAI Vision analysis
-- Parallel processing for improved performance
-- Comprehensive image matching and recognition
+### Security & Privacy
+- Email encryption using AES-256-GCM
+- Argon2 password hashing
+- Rate limiting protection
+- Secure session management
+- CORS protection with domain allowlist
 
-### Storage and Organization
-- Session-based file organization
-- Automatic metadata tracking
-- Cached analysis results
-- Clean session management
+### Cloud Integration
+- Google Cloud Storage for file management
+- Google Cloud Secret Manager for secure configuration
+- Scalable session-based storage architecture
 
 ## API Endpoints
 
-### POST `/upload-temp`
-Handles temporary image uploads and creates a new session.
+### Image Upload
+```http
+POST /upload-temp
+Content-Type: multipart/form-data
 
-**Request:**
-- Method: `POST`
-- Content-Type: `multipart/form-data`
-- Body: 
-  - `image`: Image file (JPEG, PNG, or WebP)
-
-**Response:**
-```json
 {
-  "success": true,
-  "message": "Image uploaded successfully.",
-  "imageUrl": "https://storage.googleapis.com/bucket-name/path/to/image",
-  "sessionId": "unique-session-id"
+  "image": <file>
 }
 ```
+- Supports JPEG, PNG, WebP formats
+- 10MB file size limit
+- Returns session ID and image URL
 
-### POST `/visual-search`
-Performs visual analysis on the uploaded image using both Google Vision and OpenAI.
+### Visual Analysis
+```http
+POST /visual-search
+Content-Type: application/json
 
-**Request:**
-- Method: `POST`
-- Content-Type: `application/json`
-- Body:
-```json
 {
-  "sessionId": "unique-session-id"
+  "sessionId": "uuid"
 }
 ```
+- Performs parallel Google Vision and OpenAI analysis
+- Uses OpenAI model `gpt-4o` for visual analysis
+- Returns comprehensive image analysis results
 
-**Response:**
-```json
+### Origin Analysis
+```http
+POST /origin-analysis
+Content-Type: application/json
+
 {
-  "success": true,
-  "message": "Visual search completed successfully.",
-  "results": {
-    "vision": {
-      "webEntities": [...],
-      "description": {...},
-      "matches": {...},
-      "webLabels": [...]
-    },
-    "openai": {
-      "category": "Art|Antique",
-      "description": "Brief description"
-    }
-  },
-  "analyzed": true,
-  "analysisTimestamp": 1234567890
+  "sessionId": "uuid"
 }
+```
+- Analyzes artwork originality
+- Compares with similar images
+- Uses OpenAI model `o1` for origin analysis
+- Provides expert analysis and recommendations
+
+### Email Submission
+```http
+POST /submit-email
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "sessionId": "uuid"
+}
+```
+- Rate limited to 5 requests per minute
+- Secure email storage with encryption
+- Email validation and hashing
+
+## Project Structure
+
+```
+src/
+├── config/
+│   └── secrets.js       # Secret management
+├── middleware/
+│   └── cors.js          # CORS configuration
+├── routes/
+│   ├── email.js         # Email handling
+│   ├── originAnalysis.js # Origin analysis
+│   ├── upload.js        # File uploads
+│   └── visualSearch.js  # Visual search
+├── services/
+│   ├── encryption.js    # AES encryption
+│   ├── openai.js        # OpenAI integration
+│   └── storage.js       # Cloud storage
+└── utils/
+    └── urlValidator.js  # URL validation
 ```
 
 ## Security Features
 
-- CORS protection with allowlist
-- Request size limits
+### Data Protection
+- AES-256-GCM encryption for sensitive data
+- Argon2id hashing for emails
+- Secure session management
+- Request rate limiting
+
+### Access Control
+- Domain-based CORS protection
 - File type validation
-- Secure cloud storage
-- Environment-based error handling
+- Size limits enforcement
+- Secure cloud storage access
 
-## Environment Setup
-
-Required environment variables:
-- `GOOGLE_CLOUD_PROJECT_ID`
-- `GCS_BUCKET_NAME`
-- `OPENAI_API_KEY`
-
-All secrets are managed through Google Cloud Secret Manager.
-
-## Architecture
-
-### Services
-- `CloudServices`: Manages Google Cloud Storage and Vision API
-- `OpenAIService`: Handles OpenAI Vision analysis
-
-### Middleware
-- CORS configuration
-- File upload handling
-- Error handling
-
-### Routes
-- Upload management
-- Visual search processing
-
-## Error Handling
-
-- Detailed error logging
-- Development/production error responses
-- Graceful failure handling
-- Session validation
-
-## Storage Structure
+## Cloud Storage Structure
 
 ```
 sessions/
-  ├── {sessionId}/
-  │   ├── UserUploadedImage.{ext}
-  │   └── metadata.json
+├── {sessionId}/
+│   ├── UserUploadedImage.{ext}
+│   ├── metadata.json
+│   ├── analysis.json
+│   └── origin.json
 ```
+
+## Environment Variables
+
+Required secrets in Google Cloud Secret Manager:
+- `GOOGLE_CLOUD_PROJECT_ID`
+- `GCS_BUCKET_NAME`
+- `OPENAI_API_KEY` (Required for accessing OpenAI models: gpt-4o and o1)
+- `EMAIL_ENCRYPTION_KEY`
+- `SERVICE_ACCOUNT_JSON`
+
+## Dependencies
+
+Core dependencies:
+```json
+{
+  "@google-cloud/storage": "^6.9.2",
+  "@google-cloud/vision": "^4.2.0",
+  "@google-cloud/secret-manager": "^4.2.0",
+  "openai": "^4.0.0", // Required for gpt-4o model access
+  "express": "^4.18.2",
+  "argon2": "^0.31.2",
+  "express-rate-limit": "^7.1.5"
+}
+```
+
+## Error Handling
+
+- Environment-specific error responses
+- Detailed error logging
+- Graceful failure handling
+- Request validation
+- Session verification
 
 ## Performance Optimizations
 
 - Parallel API processing
-- Efficient file handling
-- Metadata caching
-- Response formatting
 - Memory-efficient uploads
+- Response caching
+- Metadata optimization
+- URL validation and filtering
+
+## Development
+
+To run locally:
+```bash
+npm install
+npm start
+```
+
+The server will start on port 8080 by default.
