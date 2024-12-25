@@ -10,12 +10,15 @@ class OpenAIService {
     this.client = null;
   }
 
-  getModel(type) {
-    return MODELS[type] || MODELS.VISUAL_SEARCH;
+  initialize(apiKey) {
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+    this.client = new OpenAI({ apiKey });
   }
 
-      ]
-    });
+  getModel(type) {
+    return MODELS[type] || MODELS.VISUAL_SEARCH;
   }
 
   async analyzeImage(imageUrl, prompt, modelType = 'VISUAL_SEARCH') {
@@ -95,9 +98,7 @@ class OpenAIService {
             role: "user", 
             content: content
           }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
+        ]
       });
 
       console.log('OpenAI raw response:', response);
