@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const { getModel } = require('../config/models');
+const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT } = require('../config/prompts');
 
 class OpenAIService {
   constructor() {
@@ -24,7 +25,7 @@ class OpenAIService {
         messages: [
           {
             role: "system",
-            content: prompt || systemPrompt
+            content: prompt || VISUAL_SEARCH_PROMPT
           },
           {
             role: "user", 
@@ -84,7 +85,7 @@ class OpenAIService {
         messages: [
           {
             role: "system",
-            content: prompt
+            content: prompt || ORIGIN_ANALYSIS_PROMPT
           },
           {
             role: "user", 
