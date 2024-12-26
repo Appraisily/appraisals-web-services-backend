@@ -87,6 +87,23 @@ const getFreeReportTemplate = () => `<!DOCTYPE html>
       font-weight: 500;
     }
     
+    .cta-button {
+      display: inline-block;
+      background-color: #4F46E5;
+      color: #ffffff !important;
+      padding: 16px 32px;
+      margin: 24px 0;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    
+    .cta-button:hover {
+      background-color: #4338CA;
+    }
+    
     @media only screen and (max-width: 600px) {
       body {
         padding: 16px;
@@ -142,6 +159,12 @@ const getFreeReportTemplate = () => `<!DOCTYPE html>
         <li>Authentication insights</li>
         <li>Historical context and provenance</li>
       </ul>
+
+      <div style="text-align: center;">
+        <a href="https://appraisily.com/start" class="cta-button">
+          Get Professional Appraisal
+        </a>
+      </div>
 
       <div class="signature">
         <p>Thank you for choosing Appraisily!<br>Best regards,<br>The Appraisily Team</p>

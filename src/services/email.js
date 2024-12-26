@@ -21,15 +21,15 @@ class EmailService {
     if (!this.initialized) {
       throw new Error('Email service not initialized');
     }
-
+    
+    const template = getFreeReportTemplate();
+    const htmlContent = template.replace('{{free_report}}', reportData);
+    
     const msg = {
       to: toEmail,
       from: this.fromEmail,
       subject: 'Your Free Art Analysis Report from Appraisily',
-      templateId: this.templateId,
-      dynamic_template_data: {
-        report_content: reportData.replace(/"/g, '\\"').replace(/'/g, "\\'")
-      }
+      html: htmlContent
     };
 
     try {
