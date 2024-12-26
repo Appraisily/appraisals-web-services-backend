@@ -7,7 +7,7 @@ A robust Node.js backend service for art and antique image analysis using Google
 ### Image Analysis
 - Dual analysis system using Google Cloud Vision and OpenAI Vision
 - Origin analysis for artwork authenticity
-- Visual similarity search
+- Visual similarity search with parallel API processing
 - Comprehensive image metadata extraction
 
 ### Security & Privacy
@@ -16,6 +16,12 @@ A robust Node.js backend service for art and antique image analysis using Google
 - Rate limiting protection
 - Secure session management
 - CORS protection with domain allowlist
+
+### Storage
+- Session-based file organization
+- Automatic file cleanup
+- Structured JSON storage for analysis results
+- Metadata tracking for all uploads
 
 ### Cloud Integration
 - Google Cloud Storage for file management
@@ -34,8 +40,34 @@ Content-Type: multipart/form-data
 }
 ```
 - Supports JPEG, PNG, WebP formats
-- 10MB file size limit
+- 10MB file size limit with validation
 - Returns session ID and image URL
+- Creates session storage structure
+
+### Session Data
+```http
+GET /session/{sessionId}
+
+Response: {
+  "success": boolean,
+  "session": {
+    "id": string,
+    "metadata": {
+      "originalName": string,
+      "timestamp": number,
+      "analyzed": boolean,
+      "mimeType": string,
+      "size": number,
+      "imageUrl": string
+    },
+    "analysis": object | null,
+    "origin": object | null
+  }
+}
+```
+- Returns complete session data including metadata
+- Includes analysis and origin results if available
+- Returns 404 if session not found
 
 ### Visual Analysis
 ```http
@@ -45,10 +77,34 @@ Content-Type: application/json
 {
   "sessionId": "uuid"
 }
+
+Response: {
+  "success": boolean,
+  "message": string,
+  "results": {
+    "vision": {
+      "webEntities": Array<Entity>,
+      "description": {
+        "labels": string[],
+        "confidence": number
+      },
+      "matches": {
+        "exact": Array<Match>,
+        "partial": Array<Match>,
+        "similar": Array<Match>
+      }
+    },
+    "openai": {
+      "category": "Art" | "Antique",
+      "description": string
+    }
+  }
+}
 ```
 - Performs parallel Google Vision and OpenAI analysis
-- Uses OpenAI model `gpt-4o` for visual analysis
+- Uses OpenAI model `gpt-4-vision-preview` for visual analysis
 - Returns comprehensive image analysis results
+- Saves results to `analysis.json` in session storage
 
 ### Origin Analysis
 ```http
@@ -58,11 +114,50 @@ Content-Type: application/json
 {
   "sessionId": "uuid"
 }
+
+Response: {
+  "success": boolean,
+  "message": string,
+  "results": {
+    "timestamp": number,
+    "matches": {
+      "exact": Array<Match>,
+      "partial": Array<Match>,
+      "similar": Array<Match>
+    },
+    "originAnalysis": {
+      "originality": "original" | "reproduction",
+      "confidence": number,
+      "style_analysis": string,
+      "unique_characteristics": string[],
+      "comparison_notes": string,
+      "recommendation": string
+    },
+    "webEntities": Array<Entity>,
+    "visionLabels": {
+      "labels": string[],
+      "confidence": number
+    },
+    "openaiAnalysis": {
+      "category": string,
+      "description": string
+    },
+    "imageMetadata": {
+      "imageUrl": string,
+      "originalName": string,
+      "mimeType": string,
+      "size": number,
+      "url": string,
+      "userImage": string
+    }
+  }
+}
 ```
 - Analyzes artwork originality
 - Compares with similar images
-- Uses OpenAI model `o1` for origin analysis
+- Uses OpenAI model `gpt-4-vision-preview` for origin analysis
 - Provides expert analysis and recommendations
+- Saves results to `origin.json` in session storage
 
 ### Email Submission
 ```http
@@ -121,9 +216,9 @@ src/
 sessions/
 ├── {sessionId}/
 │   ├── UserUploadedImage.{ext}
-│   ├── metadata.json
-│   ├── analysis.json
-│   └── origin.json
+│   ├── metadata.json      # Upload metadata and session info
+│   ├── analysis.json      # Visual search analysis results
+│   └── origin.json        # Origin analysis results
 ```
 
 ## Environment Variables
@@ -138,18 +233,12 @@ Required secrets in Google Cloud Secret Manager:
 ## Dependencies
 
 Core dependencies:
-```json
-{
-  "@google-cloud/storage": "^6.9.2",
-  "@google-cloud/vision": "^4.2.0",
-  "@google-cloud/secret-manager": "^4.2.0",
-  "openai": "^4.0.0",
-  "express": "^4.18.2",
-  "argon2": "^0.31.2",
-  "express-rate-limit": "^7.1.5",
-  "validator": "^13.11.0"
-}
-```
+- Google Cloud: Storage, Vision API, Secret Manager
+- OpenAI API for image analysis
+- Express.js for API routing
+- Security: Argon2, express-rate-limit, validator
+- File handling: multer, mime-types
+- Utilities: uuid, node-fetch
 
 ## Error Handling
 
@@ -162,7 +251,7 @@ Core dependencies:
 ## Performance Optimizations
 
 - Parallel API processing
-- Memory-efficient uploads
+- Memory-efficient file uploads using streams
 - Response caching
 - Metadata optimization
 - URL validation and filtering
