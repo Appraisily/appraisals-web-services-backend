@@ -23,7 +23,13 @@ class EmailService {
     }
     
     const template = getFreeReportTemplate();
-    const htmlContent = template.replace('{{free_report}}', reportData);
+    // Escape special characters for SendGrid
+    const escapedReportData = reportData
+      .replace(/\{/g, '&#123;')
+      .replace(/\}/g, '&#125;')
+      .replace(/"/g, '&quot;');
+    
+    const htmlContent = template.replace('{{free_report}}', escapedReportData);
     
     const msg = {
       to: toEmail,

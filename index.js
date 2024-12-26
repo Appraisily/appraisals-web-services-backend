@@ -13,6 +13,10 @@ const emailRouter = require('./src/routes/email');
 const app = express();
 
 app.use(express.json());
+
+// Trust proxy - required for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
 app.use(corsMiddleware);
 
 // Mount routes
