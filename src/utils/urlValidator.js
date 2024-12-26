@@ -1,14 +1,29 @@
 const fetch = require('node-fetch');
 
+const TIMEOUT_MS = 5000; // 5 seconds timeout
+
 async function isValidImageUrl(url) {
   try {
-    const response = await fetch(url, { method: 'HEAD' });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    
+    const response = await fetch(url, { 
+      method: 'HEAD',
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeout);
+    
     if (!response.ok) return false;
     
     const contentType = response.headers.get('content-type');
     return contentType && contentType.startsWith('image/');
   } catch (error) {
-    console.warn(`Failed to validate URL: ${url}`, error.message);
+    if (error.name === 'AbortError') {
+      console.warn(`Timeout validating URL: ${url} (exceeded ${TIMEOUT_MS}ms)`);
+    } else {
+      console.warn(`Failed to validate URL: ${url}`, error.message);
+    }
     return false;
   }
 }

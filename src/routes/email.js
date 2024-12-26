@@ -9,10 +9,15 @@ const reportComposer = require('../services/reportComposer');
 
 const router = express.Router();
 
+// Configure Express to trust proxy headers
+router.set('trust proxy', 1);
+
 // Rate limiting: 5 requests per minute per IP
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: {
     success: false,
     message: 'Too many requests, please try again later.'

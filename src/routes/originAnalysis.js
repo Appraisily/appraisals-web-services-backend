@@ -65,7 +65,9 @@ router.post('/origin-analysis', async (req, res) => {
     const allSimilarImages = analysis.vision.matches.similar || [];
     
     // Filter and validate similar image URLs before sending to OpenAI
-    const validSimilarImages = await filterValidImageUrls(allSimilarImages);
+    // Take only the first 5 images to optimize processing time
+    const topSimilarImages = allSimilarImages.slice(0, 5);
+    const validSimilarImages = await filterValidImageUrls(topSimilarImages);
 
     // Create the prompt for origin analysis
     const originPrompt = `You are an expert art appraiser with access to computer vision technology. 
