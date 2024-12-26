@@ -114,24 +114,24 @@ router.post('/visual-search', async (req, res) => {
     const analysisResults = {
       timestamp: Date.now(),
       vision: formattedResults,
-      openai: openaiAnalysis,
-      metadata: {
-        imageUrl: metadata.imageUrl,
-        originalName: metadata.originalName,
-        mimeType: metadata.mimeType,
-        size: metadata.size
-      }
+      openai: openaiAnalysis
     };
 
     const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
-    await analysisFile.save(JSON.stringify(analysisResults, null, 2), {
+    const analysisString = JSON.stringify(analysisResults, null, 2);
+    await analysisFile.save(analysisString, {
       contentType: 'application/json',
       metadata: {
         cacheControl: 'no-cache'
       }
     });
 
-    console.log(`Analysis results saved to sessions/${sessionId}/analysis.json`);
+    // Verify the file was saved
+    const [exists] = await analysisFile.exists();
+    if (!exists) {
+      throw new Error('Failed to save analysis results');
+    }
+    console.log(`Analysis results saved successfully to sessions/${sessionId}/analysis.json`);
 
     // Update metadata to mark image as analyzed
     metadata.analyzed = true;

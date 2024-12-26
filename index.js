@@ -6,6 +6,7 @@ const uploadRouter = require('./src/routes/upload');
 const encryption = require('./src/services/encryption');
 const visualSearchRouter = require('./src/routes/visualSearch');
 const sessionRouter = require('./src/routes/session');
+const emailService = require('./src/services/email');
 const originAnalysisRouter = require('./src/routes/originAnalysis');
 const emailRouter = require('./src/routes/email');
 
@@ -34,6 +35,13 @@ const init = async () => {
 
     // Initialize encryption service
     encryption.initialize(secrets.EMAIL_ENCRYPTION_KEY);
+
+    // Initialize email service
+    emailService.initialize(
+      secrets.SENDGRID_API_KEY,
+      secrets.SENDGRID_EMAIL,
+      secrets.SEND_GRID_TEMPLATE_FREE_REPORT
+    );
 
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {

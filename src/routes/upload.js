@@ -38,20 +38,32 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     const sessionId = uuidv4();
     const sessionFolder = `sessions/${sessionId}`;
     const fileExtension = mime.extension(req.file.mimetype);
-    const imageFileName = `${sessionFolder}/UserUploadedImage.${fileExtension}`;
+    const imageFileName = `UserUploadedImage.${fileExtension}`;
+    const fullImagePath = `${sessionFolder}/${imageFileName}`;
 
     const sessionMetadata = {
       originalName: req.file.originalname,
       timestamp: Date.now(),
       analyzed: false,
       mimeType: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
+      fileName: imageFileName
     };
 
     const bucket = cloudServices.getBucket();
-    const file = bucket.file(imageFileName);
-    console.log(`Preparing to upload image as: ${imageFileName}`);
+    const file = bucket.file(fullImagePath);
+    console.log(`Preparing to upload image as: ${fullImagePath}`);
 
+    // Create session folder
+    try {
+      await bucket.file(sessionFolder + '/.keep').save('');
+      console.log(`Created session folder: ${sessionFolder}`);
+    } catch (error) {
+      console.warn('Error creating session folder:', error);
+      // Continue since this is not critical
+    }
+
+    // Upload the image
     await file.save(req.file.buffer, {
       resumable: false,
       contentType: req.file.mimetype,
@@ -62,19 +74,34 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
 
     console.log('Image uploaded to GCS successfully.');
     
-    const imageUrl = `https://storage.googleapis.com/${bucket.name}/${imageFileName}`;
+    const imageUrl = `https://storage.googleapis.com/${bucket.name}/${fullImagePath}`;
     sessionMetadata.imageUrl = imageUrl;
 
     const metadataFile = bucket.file(`${sessionFolder}/metadata.json`);
-    await metadataFile.save(JSON.stringify(sessionMetadata, null, 2), {
+    const metadataString = JSON.stringify(sessionMetadata, null, 2);
+    await metadataFile.save(metadataString, {
       contentType: 'application/json',
       metadata: {
         cacheControl: 'no-cache'
       }
     });
 
+    // Verify metadata was saved
+    const [metadataExists] = await metadataFile.exists();
+    if (!metadataExists) {
+      throw new Error('Failed to save session metadata');
+    }
     console.log(`Session metadata saved for session ID: ${sessionId}`);
 
+    // Verify complete session structure
+    const sessionFiles = await bucket.getFiles({
+      prefix: sessionFolder
+    });
+    
+    console.log('Session structure created:');
+    console.log(`- ${sessionFolder}/`);
+    console.log(`  ├── ${imageFileName}`);
+    console.log(`  └── metadata.json`);
     res.json({
       success: true,
       message: 'Image uploaded successfully.',

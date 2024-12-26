@@ -3,7 +3,9 @@ const { rateLimit } = require('express-rate-limit');
 const validator = require('validator');
 const argon2 = require('argon2');
 const cloudServices = require('../services/storage');
+const emailService = require('../services/email');
 const encryption = require('../services/encryption');
+const reportComposer = require('../services/reportComposer');
 
 const router = express.Router();
 
@@ -38,8 +40,12 @@ router.post('/submit-email', limiter, async (req, res) => {
     }
 
     // Validate session exists
+    const sessionFolder = `sessions/${sessionId}`;
     const bucket = cloudServices.getBucket();
-    const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
+    const metadataFile = bucket.file(`${sessionFolder}/metadata.json`);
+    const analysisFile = bucket.file(`${sessionFolder}/analysis.json`);
+    const originFile = bucket.file(`${sessionFolder}/origin.json`);
+
     const [exists] = await metadataFile.exists();
 
     if (!exists) {
@@ -75,6 +81,18 @@ router.post('/submit-email', limiter, async (req, res) => {
         cacheControl: 'no-cache'
       }
     });
+
+    // Load analysis and origin data for the report
+    const [analysisContent, originContent] = await Promise.all([
+      analysisFile.download().then(([content]) => JSON.parse(content.toString())),
+      originFile.download().then(([content]) => JSON.parse(content.toString()))
+    ]);
+    
+    // Generate the report using the composer
+    const reportHtml = reportComposer.composeAnalysisReport(analysisContent, originContent);
+
+    // Send email with the report
+    await emailService.sendFreeReport(email, reportHtml);
 
     res.json({
       success: true,

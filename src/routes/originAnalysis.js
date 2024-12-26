@@ -2,6 +2,7 @@ const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
 const { filterValidImageUrls } = require('../utils/urlValidator');
+const originFormatter = require('../services/originFormatter');
 
 const router = express.Router();
 
@@ -178,37 +179,29 @@ Provide your analysis in JSON format:
     };
 
     // Save origin analysis results
-    const originResults = {
-      timestamp: Date.now(),
-      matches: allMatches,
+    const originResults = originFormatter.formatOriginAnalysis({
       originAnalysis,
-      webEntities: webEntities.map(entity => ({
-        entityId: entity.entityId,
-        score: entity.score,
-        description: entity.description
-      })),
-      visionLabels: {
-        labels,
-        confidence
-      },
-      openaiAnalysis: {
-        category,
-        description: openaiDescription
-      },
-      imageMetadata: {
-        ...imageMetadata,
-        url: metadata.imageUrl,
-        userImage: userImageUrl
-      }
-    };
+      matches: allMatches,
+      webEntities,
+      visionLabels: { labels, confidence },
+      openaiAnalysis: { category, description: openaiDescription }
+    });
 
     const originFile = bucket.file(`sessions/${sessionId}/origin.json`);
-    await originFile.save(JSON.stringify(originResults, null, 2), {
+    const originString = JSON.stringify(originResults, null, 2);
+    await originFile.save(originString, {
       contentType: 'application/json',
       metadata: {
         cacheControl: 'no-cache'
       }
     });
+
+    // Verify the file was saved
+    const [exists] = await originFile.exists();
+    if (!exists) {
+      throw new Error('Failed to save origin analysis results');
+    }
+    console.log(`Origin analysis results saved successfully to sessions/${sessionId}/origin.json`);
 
     // Update metadata to mark origin analysis as complete
     metadata.originAnalyzed = true;

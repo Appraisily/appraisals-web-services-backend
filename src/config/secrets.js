@@ -28,7 +28,10 @@ const loadSecrets = async () => {
       SERVICE_ACCOUNT_JSON: await getSecret('service-account-json'),
       GCS_BUCKET_NAME: await getSecret('GCS_BUCKET_NAME'),
       OPENAI_API_KEY: await getSecret('OPENAI_API_KEY'),
-      EMAIL_ENCRYPTION_KEY: await getSecret('EMAIL_ENCRYPTION_KEY')
+      EMAIL_ENCRYPTION_KEY: await getSecret('EMAIL_ENCRYPTION_KEY'),
+      SENDGRID_API_KEY: await getSecret('SENDGRID_API_KEY'), 
+      SENDGRID_EMAIL: await getSecret('SENDGRID_EMAIL'),
+      SEND_GRID_TEMPLATE_FREE_REPORT: await getSecret('SEND_GRID_TEMPLATE_FREE_REPORT')
     };
     console.log('All secrets loaded successfully.');
 
