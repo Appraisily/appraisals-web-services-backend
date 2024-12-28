@@ -1,6 +1,15 @@
 # Art Appraisal Web Services Backend
 
-A robust Node.js backend service for art and antique image analysis using Google Cloud Vision API and OpenAI Vision.
+A robust Node.js backend service for art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and professional reporting capabilities.
+
+## Status
+
+✅ **Production Ready**
+- All core features implemented and tested
+- Email reporting system operational
+- Rate limiting and security measures in place
+- Cloud storage integration complete
+- API endpoints fully documented
 
 ## Core Features
 
@@ -13,20 +22,31 @@ A robust Node.js backend service for art and antique image analysis using Google
 ### Security & Privacy
 - Email encryption using AES-256-GCM
 - Argon2 password hashing
-- Rate limiting protection
+- Rate limiting protection (5 requests per minute)
 - Secure session management
 - CORS protection with domain allowlist
+- Request timeout handling (5s for external resources)
 
-### Storage
+### Storage & Data Management
 - Session-based file organization
 - Automatic file cleanup
 - Structured JSON storage for analysis results
 - Metadata tracking for all uploads
+- Efficient URL validation with timeouts
 
 ### Cloud Integration
 - Google Cloud Storage for file management
 - Google Cloud Secret Manager for secure configuration
-- Scalable session-based storage architecture
+- Google Cloud Vision API for image analysis
+- OpenAI GPT-4 Vision for expert analysis
+- SendGrid for email delivery
+
+### Email Features
+- Professional HTML email templates
+- Secure email encryption
+- Rate-limited submissions
+- Analysis report generation
+- CTA for professional services
 
 ## API Endpoints
 
@@ -65,9 +85,6 @@ Response: {
   }
 }
 ```
-- Returns complete session data including metadata
-- Includes analysis and origin results if available
-- Returns 404 if session not found
 
 ### Visual Analysis
 ```http
@@ -101,10 +118,6 @@ Response: {
   }
 }
 ```
-- Performs parallel Google Vision and OpenAI analysis
-- Uses OpenAI model `gpt-4-vision-preview` for visual analysis
-- Returns comprehensive image analysis results
-- Saves results to `analysis.json` in session storage
 
 ### Origin Analysis
 ```http
@@ -132,32 +145,10 @@ Response: {
       "unique_characteristics": string[],
       "comparison_notes": string,
       "recommendation": string
-    },
-    "webEntities": Array<Entity>,
-    "visionLabels": {
-      "labels": string[],
-      "confidence": number
-    },
-    "openaiAnalysis": {
-      "category": string,
-      "description": string
-    },
-    "imageMetadata": {
-      "imageUrl": string,
-      "originalName": string,
-      "mimeType": string,
-      "size": number,
-      "url": string,
-      "userImage": string
     }
   }
 }
 ```
-- Analyzes artwork originality
-- Compares with similar images
-- Uses OpenAI model `gpt-4-vision-preview` for origin analysis
-- Provides expert analysis and recommendations
-- Saves results to `origin.json` in session storage
 
 ### Email Submission
 ```http
@@ -168,10 +159,18 @@ Content-Type: application/json
   "email": "user@example.com",
   "sessionId": "uuid"
 }
+
+Response: {
+  "success": boolean,
+  "message": string,
+  "emailHash": string,
+  "submissionTime": number
+}
 ```
 - Rate limited to 5 requests per minute
-- Secure email storage with encryption
-- Email validation and hashing
+- Email validation
+- Secure storage with encryption
+- Sends professional analysis report
 
 ## Project Structure
 
@@ -186,13 +185,20 @@ src/
 ├── routes/
 │   ├── email.js         # Email handling
 │   ├── originAnalysis.js # Origin analysis
+│   ├── session.js       # Session management
 │   ├── upload.js        # File uploads
 │   └── visualSearch.js  # Visual search
 ├── services/
+│   ├── email.js         # Email service
 │   ├── encryption.js    # AES encryption
 │   ├── openai.js        # OpenAI integration
+│   ├── originFormatter.js # Analysis formatting
+│   ├── reportComposer.js # Email report generation
 │   └── storage.js       # Cloud storage
+├── templates/
+│   └── emails.js        # Email templates
 └── utils/
+    ├── dateFormatter.js # Date formatting
     └── urlValidator.js  # URL validation
 ```
 
@@ -203,6 +209,7 @@ src/
 - Argon2id hashing for emails
 - Secure session management
 - Request rate limiting
+- URL validation with timeouts
 
 ### Access Control
 - Domain-based CORS protection
@@ -221,24 +228,36 @@ sessions/
 │   └── origin.json        # Origin analysis results
 ```
 
-## Environment Variables
+## Required Environment Variables
 
-Required secrets in Google Cloud Secret Manager:
+The following secrets must be configured in Google Cloud Secret Manager:
 - `GOOGLE_CLOUD_PROJECT_ID`
 - `GCS_BUCKET_NAME`
 - `OPENAI_API_KEY`
 - `EMAIL_ENCRYPTION_KEY`
 - `SERVICE_ACCOUNT_JSON`
+- `SENDGRID_API_KEY`
+- `SENDGRID_EMAIL`
+- `SEND_GRID_TEMPLATE_FREE_REPORT`
 
 ## Dependencies
 
-Core dependencies:
-- Google Cloud: Storage, Vision API, Secret Manager
-- OpenAI API for image analysis
-- Express.js for API routing
-- Security: Argon2, express-rate-limit, validator
-- File handling: multer, mime-types
-- Utilities: uuid, node-fetch
+### Core Dependencies
+```json
+{
+  "@google-cloud/storage": "^6.9.2",
+  "@google-cloud/vision": "^4.2.0",
+  "@google-cloud/secret-manager": "^4.2.0",
+  "@sendgrid/mail": "^7.7.0",
+  "openai": "^4.0.0",
+  "express": "^4.18.2",
+  "cors": "^2.8.5",
+  "multer": "^1.4.5-lts.1",
+  "argon2": "^0.31.2",
+  "express-rate-limit": "^7.1.5",
+  "validator": "^13.11.0"
+}
+```
 
 ## Error Handling
 
@@ -247,6 +266,7 @@ Core dependencies:
 - Graceful failure handling
 - Request validation
 - Session verification
+- URL validation timeouts
 
 ## Performance Optimizations
 
@@ -254,114 +274,36 @@ Core dependencies:
 - Memory-efficient file uploads using streams
 - Response caching
 - Metadata optimization
-- URL validation and filtering
+- URL validation with timeouts
+- Limited similar image processing (max 5)
 
 ## Development
 
 To run locally:
+
+1. Set up Google Cloud project and enable required APIs
+2. Configure secrets in Google Cloud Secret Manager
+3. Install dependencies:
 ```bash
 npm install
+```
+
+4. Start the server:
+```bash
 npm start
 ```
 
 The server will start on port 8080 by default.
 
-## Response Formats
+## Docker Support
 
-### Visual Search Response
-```typescript
-interface VisualSearchResponse {
-  success: boolean;
-  results: {
-    openai: {
-      category: 'Art' | 'Antique';
-      description: string;
-    };
-    vision: {
-      description: {
-        labels: string[];
-        confidence: number;
-      };
-      webEntities: Array<{
-        entityId: string;
-        score: number;
-        description: string;
-      }>;
-      webLabels: Array<{
-        label: string;
-        score: number;
-        languages: string[];
-      }>;
-      derivedSubjects: string[];
-      matches?: {
-        exact: Array<{
-          url: string;
-          score: number;
-          type: string;
-          metadata: any;
-        }>;
-        partial: Array<{
-          url: string;
-          score: number;
-          type: string;
-          metadata: any;
-        }>;
-        similar: Array<{
-          url: string;
-          score: number;
-          type: string;
-          metadata: any;
-        }>;
-      };
-      pagesWithMatchingImages?: Array<any>;
-    };
-  };
-  message?: string;
-  error?: string; // Only in development
-}
+Build and run using Docker:
+
+```bash
+docker build -t art-appraisal-backend .
+docker run -p 8080:8080 art-appraisal-backend
 ```
 
-### Origin Analysis Response
-```typescript
-interface OriginAnalysisResponse {
-  success: boolean;
-  message: string;
-  results: {
-    timestamp: number;
-    matches: {
-      exact: Array<ImageMatch>;
-      partial: Array<ImageMatch>;
-      similar: Array<ImageMatch>;
-    };
-    originAnalysis: {
-      originality: 'original' | 'reproduction';
-      confidence: number;
-      style_analysis: string;
-      unique_characteristics: string[];
-      comparison_notes: string;
-      recommendation: string;
-    };
-    webEntities: Array<{
-      entityId: string;
-      score: number;
-      description: string;
-    }>;
-    visionLabels: {
-      labels: string[];
-      confidence: number;
-    };
-    openaiAnalysis: {
-      category: string;
-      description: string;
-    };
-    imageMetadata: {
-      imageUrl: string;
-      originalName: string;
-      mimeType: string;
-      size: number;
-      url: string;
-      userImage: string;
-    };
-  };
-}
-```
+## License
+
+MIT

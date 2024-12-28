@@ -89,7 +89,7 @@ const getFreeReportTemplate = () => `<!DOCTYPE html>
     
     .cta-button {
       display: inline-block;
-      background-color: #4F46E5;
+      background-color: #007bff;
       color: #ffffff !important;
       padding: 16px 32px;
       margin: 24px 0;
@@ -101,7 +101,7 @@ const getFreeReportTemplate = () => `<!DOCTYPE html>
     }
     
     .cta-button:hover {
-      background-color: #4338CA;
+      background-color: #0056b3;
     }
     
     @media only screen and (max-width: 600px) {

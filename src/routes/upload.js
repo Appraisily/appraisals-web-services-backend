@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -92,6 +93,14 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
       throw new Error('Failed to save session metadata');
     }
     console.log(`Session metadata saved for session ID: ${sessionId}`);
+
+    // Log upload to Google Sheets
+    try {
+      await sheetsService.logUpload(sessionId, sessionMetadata.timestamp);
+    } catch (error) {
+      console.error('Error logging to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     // Verify complete session structure
     const sessionFiles = await bucket.getFiles({
