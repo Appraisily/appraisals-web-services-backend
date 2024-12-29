@@ -85,10 +85,22 @@ router.post('/submit-email', limiter, async (req, res) => {
     });
 
     // Load analysis and origin data for the report
-    const [analysisContent, originContent] = await Promise.all([
-      analysisFile.download().then(([content]) => JSON.parse(content.toString())),
-      originFile.download().then(([content]) => JSON.parse(content.toString()))
-    ]);
+    let analysisContent = null;
+    let originContent = null;
+
+    try {
+      [analysisContent] = await analysisFile.download()
+        .then(([content]) => [JSON.parse(content.toString())]);
+    } catch (error) {
+      console.log('Analysis file not found, continuing without analysis data');
+    }
+
+    try {
+      [originContent] = await originFile.download()
+        .then(([content]) => [JSON.parse(content.toString())]);
+    } catch (error) {
+      console.log('Origin file not found, continuing without origin data');
+    }
     
     // Generate the report using the composer
     const reportHtml = reportComposer.composeAnalysisReport(analysisContent, originContent);

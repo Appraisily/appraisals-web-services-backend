@@ -39,38 +39,71 @@ class SheetsService {
       throw new Error('Sheets service not initialized');
     }
 
+    // Validate inputs
+    if (!sessionId || !timestamp) {
+      console.error('Invalid input parameters for sheets logging');
+      return false;
+    }
+
     try {
       console.log('Attempting to log upload to Google Sheets...');
       
-      // Verify auth and access
-      const client = await this.auth.getClient();
-      console.log('Auth client obtained successfully');
+      // Get auth client with retry
+      let client;
+      try {
+        client = await this.auth.getClient();
+        console.log('Auth client obtained successfully');
+      } catch (authError) {
+        console.error('Auth client error:', authError);
+        return false;
+      }
 
       const formattedDate = new Date(timestamp).toISOString();
       
-      const response = await this.sheets.spreadsheets.values.append({
-        spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:B',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [[formattedDate, sessionId]]
+      // First verify access to the spreadsheet
+      try {
+        await this.sheets.spreadsheets.get({
+          spreadsheetId: this.sheetsId,
+          ranges: ['Sheet1!A1:B1'],
+          fields: 'sheets.properties.title'
+        });
+      } catch (accessError) {
+        if (accessError.code === 403) {
+          console.error(`Access denied to spreadsheet. Please ensure the service account (${client.email}) has edit access to the spreadsheet.`);
+          return false;
         }
-      });
+        throw accessError;
+      }
 
-      console.log('Sheets API Response:', response.status, response.statusText);
-      console.log(`Successfully logged upload - Session: ${sessionId}, Date: ${formattedDate}`);
+      // Attempt to append the data
+      try {
+        const response = await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.sheetsId,
+          range: 'Sheet1!A:B',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [[formattedDate, sessionId]]
+          }
+        });
+
+        console.log('Successfully logged to sheets:', {
+          updatedRange: response.data.updates.updatedRange,
+          updatedRows: response.data.updates.updatedRows
+        });
+      } catch (appendError) {
+        console.error('Error appending data:', appendError);
+        return false;
+      }
+
       return true;
     } catch (error) {
       console.error('Error logging to sheets:', {
         message: error.message,
         code: error.code,
         status: error.status,
-        details: error.errors
+        details: error.errors || error
       });
-      if (error.message.includes('permission')) {
-        console.error('This is likely a permissions issue. Ensure the service account has access to the spreadsheet.');
-      }
-      throw error;
+      return false;
     }
   }
 }

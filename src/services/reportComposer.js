@@ -2,6 +2,21 @@ const { formatDate } = require('../utils/dateFormatter');
 
 class ReportComposer {
   composeAnalysisReport(analysisData, originData) {
+    // Handle case where analysis or origin data is missing
+    if (!analysisData && !originData) {
+      return `
+        <div style="color: #1f2937;">
+          <div style="margin-bottom: 24px;">
+            <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 16px;">Basic Report</h2>
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px;">
+              <p style="margin: 0;">Your image has been received and is pending analysis. For a complete analysis including 
+              artwork authenticity, origin determination, and professional recommendations, please visit our website.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const {
       openai: { category, description } = {},
       vision: {
