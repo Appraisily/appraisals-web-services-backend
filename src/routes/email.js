@@ -5,6 +5,7 @@ const argon2 = require('argon2');
 const cloudServices = require('../services/storage');
 const emailService = require('../services/email');
 const encryption = require('../services/encryption');
+const sheetsService = require('../services/sheets');
 const reportComposer = require('../services/reportComposer');
 
 const router = express.Router();
