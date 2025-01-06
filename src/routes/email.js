@@ -57,6 +57,10 @@ router.post('/submit-email', limiter, async (req, res) => {
       });
     }
 
+    // Load metadata
+    const [metadataContent] = await metadataFile.download();
+    const metadata = JSON.parse(metadataContent.toString());
+
     // Hash email using Argon2
     const emailHash = await argon2.hash(email, {
       type: argon2.argon2id,
@@ -65,10 +69,6 @@ router.post('/submit-email', limiter, async (req, res) => {
       parallelism: 1
     });
 
-    // Update session metadata with hashed email
-    const [metadataContent] = await metadataFile.download();
-    const metadata = JSON.parse(metadataContent.toString());
-    
     metadata.emailHash = emailHash;
     metadata.email = {
       submissionTime: Date.now(),
@@ -88,18 +88,44 @@ router.post('/submit-email', limiter, async (req, res) => {
     let analysisContent = null;
     let originContent = null;
 
+    // Check if visual analysis exists, if not perform it
     try {
       [analysisContent] = await analysisFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
     } catch (error) {
       console.log('Analysis file not found, continuing without analysis data');
+      const visualSearchResponse = await fetch(`${req.protocol}://${req.get('host')}/visual-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (!visualSearchResponse.ok) {
+        throw new Error('Failed to perform visual analysis');
+      }
+      
+      const visualSearchResult = await visualSearchResponse.json();
+      analysisContent = visualSearchResult.results;
     }
 
+    // Check if origin analysis exists, if not perform it
     try {
       [originContent] = await originFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
     } catch (error) {
       console.log('Origin file not found, continuing without origin data');
+      const originAnalysisResponse = await fetch(`${req.protocol}://${req.get('host')}/origin-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (!originAnalysisResponse.ok) {
+        throw new Error('Failed to perform origin analysis');
+      }
+      
+      const originAnalysisResult = await originAnalysisResponse.json();
+      originContent = originAnalysisResult.results;
     }
     
     // Generate the report using the composer
