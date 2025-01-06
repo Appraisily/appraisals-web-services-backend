@@ -96,7 +96,14 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
 
     // Log upload to Google Sheets
     try {
-      await sheetsService.logUpload(sessionId, sessionMetadata.timestamp);
+      await sheetsService.logUpload(
+        sessionId,
+        sessionMetadata.timestamp,
+        imageUrl
+      ).catch(error => {
+        // Log error but don't fail the request
+        console.error('Failed to log upload to sheets:', error);
+      });
     } catch (error) {
       console.error('Error logging to sheets:', error);
       // Don't fail the request if sheets logging fails

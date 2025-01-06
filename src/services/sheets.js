@@ -12,6 +12,7 @@ class SheetsService {
     if (!keyFilePath || !sheetsId) {
       throw new Error('Service account key file and sheets ID are required');
     }
+    this.sheetsId = sheetsId;
 
     try {
       console.log('Initializing Google Sheets service...');
@@ -34,13 +35,101 @@ class SheetsService {
     }
   }
 
-  async logUpload(sessionId, timestamp) {
+  async updateVisualSearchResults(sessionId, analysisJson, category) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Attempting to update visual search results in Google Sheets...');
+      
+      // Get auth client
+      const client = await this.auth.getClient();
+      console.log('Auth client obtained successfully');
+
+      // Find the row with matching sessionId
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:C',
+      });
+
+      const rows = response.data.values || [];
+      const rowIndex = rows.findIndex(row => row[1] === sessionId);
+
+      if (rowIndex === -1) {
+        console.error(`Session ID ${sessionId} not found in spreadsheet`);
+        return false;
+      }
+
+      // Update the row with analysis results (columns D and E)
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetsId,
+        range: `Sheet1!D${rowIndex + 1}:E${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[JSON.stringify(analysisJson), category]]
+        }
+      });
+
+      console.log('Successfully updated visual search results in sheets');
+      return true;
+    } catch (error) {
+      console.error('Error updating visual search results in sheets:', error);
+      return false;
+    }
+  }
+
+  async updateOriginAnalysisResults(sessionId, originJson) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Attempting to update origin analysis results in Google Sheets...');
+      
+      // Get auth client
+      const client = await this.auth.getClient();
+      console.log('Auth client obtained successfully');
+
+      // Find the row with matching sessionId
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:E',
+      });
+
+      const rows = response.data.values || [];
+      const rowIndex = rows.findIndex(row => row[1] === sessionId);
+
+      if (rowIndex === -1) {
+        console.error(`Session ID ${sessionId} not found in spreadsheet`);
+        return false;
+      }
+
+      // Update the row with origin analysis results (column F)
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetsId,
+        range: `Sheet1!F${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[JSON.stringify(originJson)]]
+        }
+      });
+
+      console.log('Successfully updated origin analysis results in sheets');
+      return true;
+    } catch (error) {
+      console.error('Error updating origin analysis results in sheets:', error);
+      return false;
+    }
+  }
+
+  async logUpload(sessionId, timestamp, imageUrl) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');
     }
 
     // Validate inputs
-    if (!sessionId || !timestamp) {
+    if (!sessionId || !timestamp || !imageUrl) {
       console.error('Invalid input parameters for sheets logging');
       return false;
     }
@@ -79,10 +168,10 @@ class SheetsService {
       try {
         const response = await this.sheets.spreadsheets.values.append({
           spreadsheetId: this.sheetsId,
-          range: 'Sheet1!A:B',
+          range: 'Sheet1!A:C',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [[formattedDate, sessionId]]
+            values: [[formattedDate, sessionId, imageUrl]]
           }
         });
 
@@ -103,6 +192,50 @@ class SheetsService {
         status: error.status,
         details: error.errors || error
       });
+      return false;
+    }
+  }
+
+  async updateEmailSubmission(sessionId, email) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Attempting to update email submission in Google Sheets...');
+      
+      // Get auth client
+      const client = await this.auth.getClient();
+      console.log('Auth client obtained successfully');
+
+      // Find the row with matching sessionId
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:F',
+      });
+
+      const rows = response.data.values || [];
+      const rowIndex = rows.findIndex(row => row[1] === sessionId);
+
+      if (rowIndex === -1) {
+        console.error(`Session ID ${sessionId} not found in spreadsheet`);
+        return false;
+      }
+
+      // Update the row with email (column G)
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetsId,
+        range: `Sheet1!G${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[email]]
+        }
+      });
+
+      console.log('Successfully updated email submission in sheets');
+      return true;
+    } catch (error) {
+      console.error('Error updating email submission in sheets:', error);
       return false;
     }
   }

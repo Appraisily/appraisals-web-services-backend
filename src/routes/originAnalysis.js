@@ -198,6 +198,20 @@ Provide your analysis in JSON format:
       }
     });
 
+    // Log origin analysis results to sheets
+    try {
+      await sheetsService.updateOriginAnalysisResults(
+        sessionId,
+        originResults
+      ).catch(error => {
+        // Log error but don't fail the request
+        console.error('Failed to log origin analysis results to sheets:', error);
+      });
+    } catch (error) {
+      console.error('Error logging to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
+
     // Verify the file was saved
     const [exists] = await originFile.exists();
     if (!exists) {

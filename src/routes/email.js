@@ -108,6 +108,20 @@ router.post('/submit-email', limiter, async (req, res) => {
     // Send email with the report
     await emailService.sendFreeReport(email, reportHtml);
 
+    // Log email submission to sheets
+    try {
+      await sheetsService.updateEmailSubmission(
+        sessionId,
+        email
+      ).catch(error => {
+        // Log error but don't fail the request
+        console.error('Failed to log email submission to sheets:', error);
+      });
+    } catch (error) {
+      console.error('Error logging to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
+
     res.json({
       success: true,
       message: 'Email submitted successfully.',

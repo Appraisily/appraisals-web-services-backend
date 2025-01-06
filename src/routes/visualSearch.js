@@ -117,6 +117,21 @@ router.post('/visual-search', async (req, res) => {
       openai: openaiAnalysis
     };
 
+    // Log analysis results to sheets
+    try {
+      await sheetsService.updateVisualSearchResults(
+        sessionId,
+        analysisResults,
+        openaiAnalysis.category
+      ).catch(error => {
+        // Log error but don't fail the request
+        console.error('Failed to log visual search results to sheets:', error);
+      });
+    } catch (error) {
+      console.error('Error logging to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
+
     const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
     const analysisString = JSON.stringify(analysisResults, null, 2);
     await analysisFile.save(analysisString, {
