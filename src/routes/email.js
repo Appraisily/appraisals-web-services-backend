@@ -47,6 +47,7 @@ router.post('/submit-email', limiter, async (req, res) => {
     const metadataFile = bucket.file(`${sessionFolder}/metadata.json`);
     const analysisFile = bucket.file(`${sessionFolder}/analysis.json`);
     const originFile = bucket.file(`${sessionFolder}/origin.json`);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     const [exists] = await metadataFile.exists();
 
@@ -87,14 +88,17 @@ router.post('/submit-email', limiter, async (req, res) => {
     // Load analysis and origin data for the report
     let analysisContent = null;
     let originContent = null;
+    let visualSearchCompleted = false;
+    let originAnalysisCompleted = false;
 
     // Check if visual analysis exists, if not perform it
     try {
       [analysisContent] = await analysisFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
+      visualSearchCompleted = true;
     } catch (error) {
       console.log('Analysis file not found, continuing without analysis data');
-      const visualSearchResponse = await fetch(`${req.protocol}://${req.get('host')}/visual-search`, {
+      const visualSearchResponse = await fetch(`${baseUrl}/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
@@ -105,6 +109,7 @@ router.post('/submit-email', limiter, async (req, res) => {
       }
       
       const visualSearchResult = await visualSearchResponse.json();
+      visualSearchCompleted = visualSearchResult.success;
       analysisContent = visualSearchResult.results;
     }
 
@@ -112,8 +117,9 @@ router.post('/submit-email', limiter, async (req, res) => {
     try {
       [originContent] = await originFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
+      originAnalysisCompleted = true;
     } catch (error) {
-      console.log('Origin file not found, continuing without origin data');
+      console.log('Origin file not found, performing origin analysis...');
       const originAnalysisResponse = await fetch(`${req.protocol}://${req.get('host')}/origin-analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,9 +131,15 @@ router.post('/submit-email', limiter, async (req, res) => {
       }
       
       const originAnalysisResult = await originAnalysisResponse.json();
+      originAnalysisCompleted = originAnalysisResult.success;
       originContent = originAnalysisResult.results;
     }
     
+    if (!visualSearchCompleted || !originAnalysisCompleted) {
+      throw new Error('Failed to complete required analysis');
+    }
+    console.log('All required analysis completed successfully');
+
     // Generate the report using the composer
     const reportHtml = reportComposer.composeAnalysisReport(analysisContent, originContent);
 
