@@ -7,6 +7,7 @@ const emailService = require('../services/email');
 const encryption = require('../services/encryption');
 const sheetsService = require('../services/sheets');
 const reportComposer = require('../services/reportComposer');
+const fetch = require('node-fetch');
 
 const router = express.Router();
 
@@ -26,7 +27,6 @@ router.post('/submit-email', limiter, async (req, res) => {
   try {
     const { email, sessionId } = req.body;
 
-    // Validate required fields
     if (!email || !sessionId) {
       return res.status(400).json({
         success: false,
@@ -34,7 +34,6 @@ router.post('/submit-email', limiter, async (req, res) => {
       });
     }
 
-    // Validate email format
     if (!validator.isEmail(email)) {
       return res.status(400).json({
         success: false,
@@ -42,12 +41,9 @@ router.post('/submit-email', limiter, async (req, res) => {
       });
     }
 
-    // Validate session exists
     const sessionFolder = `sessions/${sessionId}`;
     const bucket = cloudServices.getBucket();
     const metadataFile = bucket.file(`${sessionFolder}/metadata.json`);
-    const analysisFile = bucket.file(`${sessionFolder}/analysis.json`);
-    const originFile = bucket.file(`${sessionFolder}/origin.json`);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     const [exists] = await metadataFile.exists();
@@ -59,11 +55,9 @@ router.post('/submit-email', limiter, async (req, res) => {
       });
     }
 
-    // Load metadata
     const [metadataContent] = await metadataFile.download();
     const metadata = JSON.parse(metadataContent.toString());
 
-    // Hash email using Argon2
     const emailHash = await argon2.hash(email, {
       type: argon2.argon2id,
       memoryCost: 2 ** 16,
@@ -86,19 +80,25 @@ router.post('/submit-email', limiter, async (req, res) => {
       }
     });
 
-    // Load analysis and origin data for the report
-    let analysisContent = null;
-    let originContent = null;
-    let visualSearchCompleted = false;
-    let originAnalysisCompleted = false;
+    // Check for existing analyses
+    const analysisFile = bucket.file(`${sessionFolder}/analysis.json`);
+    const originFile = bucket.file(`${sessionFolder}/origin.json`);
+    const detailedFile = bucket.file(`${sessionFolder}/detailed.json`);
 
-    // Check if visual analysis exists, if not perform it
-    try {
+    const [analysisExists, originExists, detailedExists] = await Promise.all([
+      analysisFile.exists(),
+      originFile.exists(),
+      detailedFile.exists()
+    ]);
+
+    // Load or perform visual search analysis
+    let analysisContent;
+    if (analysisExists[0]) {
+      console.log('Loading existing visual search analysis...');
       [analysisContent] = await analysisFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
-      visualSearchCompleted = true;
-    } catch (error) {
-      console.log('Analysis file not found, continuing without analysis data');
+    } else {
+      console.log('Performing visual search analysis...');
       const visualSearchResponse = await fetch(`${baseUrl}/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,22 +106,22 @@ router.post('/submit-email', limiter, async (req, res) => {
       });
       
       if (!visualSearchResponse.ok) {
-        throw new Error('Failed to perform visual analysis');
+        throw new Error('Failed to perform visual search analysis');
       }
       
       const visualSearchResult = await visualSearchResponse.json();
-      visualSearchCompleted = visualSearchResult.success;
       analysisContent = visualSearchResult.results;
     }
 
-    // Check if origin analysis exists, if not perform it
-    try {
+    // Load or perform origin analysis
+    let originContent;
+    if (originExists[0]) {
+      console.log('Loading existing origin analysis...');
       [originContent] = await originFile.download()
         .then(([content]) => [JSON.parse(content.toString())]);
-      originAnalysisCompleted = true;
-    } catch (error) {
-      console.log('Origin file not found, performing origin analysis...');
-      const originAnalysisResponse = await fetch(`${req.protocol}://${req.get('host')}/origin-analysis`, {
+    } else {
+      console.log('Performing origin analysis...');
+      const originAnalysisResponse = await fetch(`${baseUrl}/origin-analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
@@ -132,33 +132,54 @@ router.post('/submit-email', limiter, async (req, res) => {
       }
       
       const originAnalysisResult = await originAnalysisResponse.json();
-      originAnalysisCompleted = originAnalysisResult.success;
       originContent = originAnalysisResult.results;
     }
-    
-    if (!visualSearchCompleted || !originAnalysisCompleted) {
-      throw new Error('Failed to complete required analysis');
+
+    // Load or perform detailed analysis
+    let detailedContent;
+    if (detailedExists[0]) {
+      console.log('Loading existing detailed analysis...');
+      [detailedContent] = await detailedFile.download()
+        .then(([content]) => [JSON.parse(content.toString())]);
+    } else {
+      console.log('Performing detailed analysis...');
+      const fullAnalysisResponse = await fetch(`${baseUrl}/full-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (!fullAnalysisResponse.ok) {
+        throw new Error('Failed to perform detailed analysis');
+      }
+      
+      const fullAnalysisResult = await fullAnalysisResponse.json();
+      detailedContent = fullAnalysisResult.results.detailedAnalysis;
     }
-    console.log('All required analysis completed successfully');
+
+    console.log('Full analysis completed successfully');
 
     // Generate the report using the composer
-    const reportHtml = reportComposer.composeAnalysisReport(analysisContent, originContent);
+    const reportHtml = reportComposer.composeAnalysisReport(
+      metadata,
+      {
+        visualSearch: analysisContent,
+        originAnalysis: originContent,
+        detailedAnalysis: detailedContent
+      }
+    );
 
-    // Send email with the report
     await emailService.sendFreeReport(email, reportHtml);
 
-    // Log email submission to sheets
     try {
       await sheetsService.updateEmailSubmission(
         sessionId,
         email
       ).catch(error => {
-        // Log error but don't fail the request
         console.error('Failed to log email submission to sheets:', error);
       });
     } catch (error) {
       console.error('Error logging to sheets:', error);
-      // Don't fail the request if sheets logging fails
     }
 
     res.json({

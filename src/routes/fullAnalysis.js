@@ -35,31 +35,39 @@ router.post('/full-analysis', async (req, res) => {
     const [metadataContent] = await metadataFile.download();
     const metadata = JSON.parse(metadataContent.toString());
 
-    // Perform detailed AI analysis
-    console.log('Starting detailed AI analysis...');
-    const detailedAnalysis = await openai.analyzeWithFullPrompt(metadata.imageUrl);
-
-    // Save detailed analysis to GCS
+    // Check if detailed analysis already exists
     const detailedAnalysisFile = bucket.file(`sessions/${sessionId}/detailed.json`);
-    await detailedAnalysisFile.save(JSON.stringify(detailedAnalysis, null, 2), {
-      contentType: 'application/json',
-      metadata: {
-        cacheControl: 'no-cache'
-      }
-    });
+    const [detailedAnalysisExists] = await detailedAnalysisFile.exists();
 
-    // Log detailed analysis to sheets
-    try {
-      await sheetsService.updateDetailedAnalysis(
-        sessionId,
-        detailedAnalysis
-      ).catch(error => {
-        // Log error but don't fail the request
-        console.error('Failed to log detailed analysis to sheets:', error);
+    let detailedAnalysis;
+    if (detailedAnalysisExists) {
+      console.log('Loading existing detailed analysis from GCS...');
+      const [detailedAnalysisContent] = await detailedAnalysisFile.download();
+      detailedAnalysis = JSON.parse(detailedAnalysisContent.toString());
+    } else {
+      // Perform new detailed AI analysis
+      console.log('Starting new detailed AI analysis...');
+      detailedAnalysis = await openai.analyzeWithFullPrompt(metadata.imageUrl);
+
+      // Save new analysis to GCS
+      await detailedAnalysisFile.save(JSON.stringify(detailedAnalysis, null, 2), {
+        contentType: 'application/json',
+        metadata: {
+          cacheControl: 'no-cache'
+        }
       });
-    } catch (error) {
-      console.error('Error logging to sheets:', error);
-      // Don't fail the request if sheets logging fails
+
+      // Log new analysis to sheets
+      try {
+        await sheetsService.updateDetailedAnalysis(
+          sessionId,
+          detailedAnalysis
+        ).catch(error => {
+          console.error('Failed to log detailed analysis to sheets:', error);
+        });
+      } catch (error) {
+        console.error('Error logging to sheets:', error);
+      }
     }
 
     // Return results
