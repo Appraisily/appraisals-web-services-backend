@@ -112,7 +112,6 @@ class OpenAIService {
       throw error;
     }
   }
-}
 
   async analyzeWithFullPrompt(imageUrl) {
     if (!this.client) {
@@ -155,5 +154,6 @@ class OpenAIService {
       throw error;
     }
   }
+}
 
 module.exports = new OpenAIService();
