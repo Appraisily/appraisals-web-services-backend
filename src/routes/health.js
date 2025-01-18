@@ -82,7 +82,23 @@ router.get('/endpoints', (req, res) => {
         }
       },
       {
-        path: "/api/route/submit-email",
+        path: "/full-analysis",
+        method: 'POST',
+        description: 'Perform complete analysis including visual search and origin analysis',
+        requiredParams: ['sessionId'],
+        response: {
+          success: true,
+          message: 'Full analysis completed successfully.',
+          results: {
+            metadata: {},
+            visualSearch: {},
+            originAnalysis: {}
+          },
+          timestamp: 'number'
+        }
+      },
+      {
+        path: "/submit-email",
         method: 'POST',
         description: 'Submit email for analysis report',
         requiredParams: ['email', 'sessionId'],

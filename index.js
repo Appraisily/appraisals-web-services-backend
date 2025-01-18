@@ -10,6 +10,7 @@ const emailService = require('./src/services/email');
 const originAnalysisRouter = require('./src/routes/originAnalysis');
 const emailRouter = require('./src/routes/email');
 const sheetsService = require('./src/services/sheets');
+const fullAnalysisRouter = require('./src/routes/fullAnalysis');
 const healthRouter = require('./src/routes/health');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use(uploadRouter);
 app.use('/session', sessionRouter);
 app.use(visualSearchRouter);
 app.use(originAnalysisRouter);
+app.use(fullAnalysisRouter);
 app.use(emailRouter);
 app.use('/api/health', healthRouter);
 

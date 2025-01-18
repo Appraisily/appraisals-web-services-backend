@@ -24,7 +24,7 @@ Please analyze:
    - Note the style/movement (e.g., Impressionist, Victorian, Mid-Century Modern, Abstract).
 
 2. Unique Characteristics or Patterns:
-   - List any notable features (e.g., brushwork, motifs, color palette, craftsmanship details, maker’s marks, hallmarks).
+   - List any notable features (e.g., brushwork, motifs, color palette, craftsmanship details, maker's marks, hallmarks).
 
 3. Estimated Era & Origin:
    - Make an educated guess about the time period (e.g., early 20th century, late 19th century, contemporary) and possible cultural/geographical origin (e.g., European, East Asian, North American).
@@ -35,11 +35,11 @@ Please analyze:
 
 5. Original or Reproduction:
    - State whether the piece appears to be an original creation/item or a reproduction/copy.
-   - If it’s an antique, consider whether it’s likely authentic, a later reproduction, or a modern imitation.
+   - If it's an antique, consider whether it's likely authentic, a later reproduction, or a modern imitation.
 
 6. Recommendation:
    - If the item shows any sign of potential significance or you are uncertain about authenticity, recommend a professional appraisal.
-   - Provide a concise rationale for why an appraisal would be beneficial (e.g., “potential historical value,” “rare style or maker,” etc.).
+   - Provide a concise rationale for why an appraisal would be beneficial (e.g., "potential historical value," "rare style or maker," etc.).
 
 Return your analysis in **JSON** format with the following keys:
 
@@ -56,8 +56,39 @@ Return your analysis in **JSON** format with the following keys:
 }
 `;
 
+const FULL_ANALYSIS_PROMPT = `You will receive an image of an artwork or antique. Please analyze it in detail and respond in the following JSON structure. Each top-level key corresponds to a specific category of analysis. For each category, provide as much detail as possible based on the image (including style, materials, technique, hallmarks, etc.). If any category is uncertain or no information is available, explicitly state so.
+
+{
+  "maker_analysis": {
+    "creator_name": "text describing likely creator or artist",
+    "reasoning": "explanation of why this creator/artist is likely or potential alternative creators"
+  },
+  "signature_check": {
+    "signature_text": "transcribed signature, if found",
+    "interpretation": "what the signature or mark might indicate"
+  },
+  "origin_analysis": {
+    "likely_origin": "region or country of origin",
+    "reasoning": "stylistic or historical clues pointing to origin"
+  },
+  "marks_recognition": {
+    "marks_identified": "list or description of any visible maker's marks, stamps, hallmarks",
+    "interpretation": "what these marks might mean or represent"
+  },
+  "age_analysis": {
+    "estimated_date_range": "probable time period of creation",
+    "reasoning": "explanation of how this estimate was derived"
+  },
+  "visual_search": {
+    "similar_artworks": "examples of known pieces with similar style or composition",
+    "notes": "any additional observations regarding visual references"
+  }
+}
+
+Ensure your final response is valid JSON. Do not include extra text or commentary outside the JSON structure.`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
-  ORIGIN_ANALYSIS_PROMPT
+  ORIGIN_ANALYSIS_PROMPT,
+  FULL_ANALYSIS_PROMPT
 };

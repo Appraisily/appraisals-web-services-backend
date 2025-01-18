@@ -150,6 +150,66 @@ Response: {
 }
 ```
 
+### Full Analysis
+```http
+POST /full-analysis
+Content-Type: application/json
+
+{
+  "sessionId": "uuid"
+}
+
+Response: {
+  "success": boolean,
+  "message": string,
+  "results": {
+    "metadata": {
+      "originalName": string,
+      "timestamp": number,
+      "analyzed": boolean,
+      "mimeType": string,
+      "size": number,
+      "imageUrl": string
+    },
+    "detailedAnalysis": {
+      "maker_analysis": {
+        "creator_name": string,
+        "reasoning": string
+      },
+      "signature_check": {
+        "signature_text": string,
+        "interpretation": string
+      },
+      "origin_analysis": {
+        "likely_origin": string,
+        "reasoning": string
+      },
+      "marks_recognition": {
+        "marks_identified": string,
+        "interpretation": string
+      },
+      "age_analysis": {
+        "estimated_date_range": string,
+        "reasoning": string
+      },
+      "visual_search": {
+        "similar_artworks": string,
+        "notes": string
+      }
+    },
+    "visualSearch": object,
+    "originAnalysis": object
+  },
+  "timestamp": number
+}
+```
+- Performs comprehensive analysis including:
+  - Detailed AI analysis of maker, signature, origin, marks, and age
+  - Visual search results
+  - Origin analysis
+- Returns combined results from all analyses
+- Includes session metadata and timestamp
+
 ### Email Submission
 ```http
 POST /submit-email

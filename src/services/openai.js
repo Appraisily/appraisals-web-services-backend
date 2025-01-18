@@ -114,4 +114,46 @@ class OpenAIService {
   }
 }
 
+  async analyzeWithFullPrompt(imageUrl) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: getModel('ORIGIN'), // Using o1 model as specified
+        messages: [
+          {
+            role: "system",
+            content: FULL_ANALYSIS_PROMPT
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
+          }
+        ]
+      });
+
+      let content = response.choices[0]?.message?.content || '{}';
+      content = content.replace(/```json\n?|\n?```/g, '').trim();
+
+      try {
+        return JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON Parse Error. Content:', content);
+        throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
+      }
+    } catch (error) {
+      console.error('Error performing full analysis with OpenAI:', error);
+      throw error;
+    }
+  }
+
 module.exports = new OpenAIService();
