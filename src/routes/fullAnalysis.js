@@ -1,7 +1,6 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
-const { FULL_ANALYSIS_PROMPT } = require('../config/prompts');
 const sheetsService = require('../services/sheets');
 
 const router = express.Router();
@@ -35,7 +34,6 @@ router.post('/full-analysis', async (req, res) => {
     // Load metadata
     const [metadataContent] = await metadataFile.download();
     const metadata = JSON.parse(metadataContent.toString());
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     // Perform detailed AI analysis
     console.log('Starting detailed AI analysis...');
@@ -63,49 +61,14 @@ router.post('/full-analysis', async (req, res) => {
       console.error('Error logging to sheets:', error);
       // Don't fail the request if sheets logging fails
     }
-    // Perform visual search
-    console.log('Starting visual search analysis...');
-    const visualSearchResponse = await fetch(`${baseUrl}/visual-search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId })
-    });
 
-    if (!visualSearchResponse.ok) {
-      throw new Error('Failed to perform visual analysis');
-    }
-
-    const visualSearchResult = await visualSearchResponse.json();
-    if (!visualSearchResult.success) {
-      throw new Error('Visual search analysis failed');
-    }
-
-    // Perform origin analysis
-    console.log('Starting origin analysis...');
-    const originAnalysisResponse = await fetch(`${baseUrl}/origin-analysis`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId })
-    });
-
-    if (!originAnalysisResponse.ok) {
-      throw new Error('Failed to perform origin analysis');
-    }
-
-    const originAnalysisResult = await originAnalysisResponse.json();
-    if (!originAnalysisResult.success) {
-      throw new Error('Origin analysis failed');
-    }
-
-    // Return combined results
+    // Return results
     res.json({
       success: true,
       message: 'Full analysis completed successfully.',
       results: {
         metadata,
-        detailedAnalysis,
-        visualSearch: visualSearchResult.results,
-        originAnalysis: originAnalysisResult.results
+        detailedAnalysis
       },
       timestamp: Date.now()
     });
