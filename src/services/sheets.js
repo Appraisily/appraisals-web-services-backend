@@ -50,7 +50,7 @@ class SheetsService {
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:C',
+        range: 'Sheet1!A:H',
       });
 
       const rows = response.data.values || [];
@@ -79,6 +79,49 @@ class SheetsService {
     }
   }
 
+  async updateDetailedAnalysis(sessionId, detailedAnalysis) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Attempting to update detailed analysis in Google Sheets...');
+      
+      // Get auth client
+      const client = await this.auth.getClient();
+      console.log('Auth client obtained successfully');
+
+      // Find the row with matching sessionId
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:H',
+      });
+
+      const rows = response.data.values || [];
+      const rowIndex = rows.findIndex(row => row[1] === sessionId);
+
+      if (rowIndex === -1) {
+        console.error(`Session ID ${sessionId} not found in spreadsheet`);
+        return false;
+      }
+
+      // Update the row with detailed analysis (column H)
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetsId,
+        range: `Sheet1!H${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[JSON.stringify(detailedAnalysis)]]
+        }
+      });
+
+      console.log('Successfully updated detailed analysis in sheets');
+      return true;
+    } catch (error) {
+      console.error('Error updating detailed analysis in sheets:', error);
+      return false;
+    }
+  }
   async updateOriginAnalysisResults(sessionId, originJson) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');

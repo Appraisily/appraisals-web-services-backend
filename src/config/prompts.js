@@ -56,36 +56,70 @@ Return your analysis in **JSON** format with the following keys:
 }
 `;
 
-const FULL_ANALYSIS_PROMPT = `You will receive an image of an artwork or antique. Please analyze it in detail and respond in the following JSON structure. Each top-level key corresponds to a specific category of analysis. For each category, provide as much detail as possible based on the image (including style, materials, technique, hallmarks, etc.). If any category is uncertain or no information is available, explicitly state so.
+const FULL_ANALYSIS_PROMPT = `
+You will receive an image of an artwork, antique, or collectible. Please analyze it in detail and respond with a comprehensive, authoritative, and technically enriched discussion for each category below. Use specialized terminology when appropriate (e.g., referencing art history, antique classifications, design movements, known materials, fabrication techniques). If any category is uncertain or no information is available, explicitly state so.
+
+Your final output must be valid JSON **only**, with no additional commentary. The top-level JSON structure must follow exactly:
 
 {
   "maker_analysis": {
-    "creator_name": "text describing likely creator or artist",
-    "reasoning": "explanation of why this creator/artist is likely or potential alternative creators"
+    "creator_name": "",
+    "reasoning": ""
   },
   "signature_check": {
-    "signature_text": "transcribed signature, if found",
-    "interpretation": "what the signature or mark might indicate"
+    "signature_text": "",
+    "interpretation": ""
   },
   "origin_analysis": {
-    "likely_origin": "region or country of origin",
-    "reasoning": "stylistic or historical clues pointing to origin"
+    "likely_origin": "",
+    "reasoning": ""
   },
   "marks_recognition": {
-    "marks_identified": "list or description of any visible maker's marks, stamps, hallmarks",
-    "interpretation": "what these marks might mean or represent"
+    "marks_identified": "",
+    "interpretation": ""
   },
   "age_analysis": {
-    "estimated_date_range": "probable time period of creation",
-    "reasoning": "explanation of how this estimate was derived"
+    "estimated_date_range": "",
+    "reasoning": ""
   },
   "visual_search": {
-    "similar_artworks": "examples of known pieces with similar style or composition",
-    "notes": "any additional observations regarding visual references"
+    "similar_artworks": "",
+    "notes": ""
   }
 }
 
-Ensure your final response is valid JSON. Do not include extra text or commentary outside the JSON structure.`;
+Where each field should be completed as follows:
+
+1. maker_analysis:
+   - creator_name: Provide the most plausible artist, maker, or manufacturer. If unknown, list possibilities (e.g., "Attributed to a known 19th-century Parisian porcelain maker" or "Likely from a regional workshop in the Edo period").
+   - reasoning: Explain, using technical detail, how you arrived at this conclusion (mention style, known artistic or manufacturing traits, relevant design movements, hallmark references, etc.).
+
+2. signature_check:
+   - signature_text: Transcribe any visible text, maker’s mark, monogram, or inscription found.
+   - interpretation: Discuss its significance (e.g., the name of the artist or workshop, possible date, or factory mark).
+
+3. origin_analysis:
+   - likely_origin: Propose the region or country of origin.
+   - reasoning: Cite stylistic, historical, or material clues (e.g., specific glazing techniques, hallmark shapes, known design motifs) that point to this origin.
+
+4. marks_recognition:
+   - marks_identified: Describe any maker’s marks, stamps, or hallmarks on the item.
+   - interpretation: Explain the meaning or typical usage of these marks (e.g., silver purity stamp, hallmark from a specific city/region, foundry mark, antique classification marks).
+
+5. age_analysis:
+   - estimated_date_range: Provide a probable time period or era of creation.
+   - reasoning: Discuss the relevant historical context, typical materials, production methods, or other clues (patina, design style, craftsmanship details) that date the piece.
+
+6. visual_search:
+   - similar_artworks: Mention known artworks, antiques, or collectibles with similar style, composition, or known origins.
+   - notes: Add any additional aesthetic or comparative details that might "wow" the viewer (e.g., unique brushstrokes, distinctive casting method, a rare pattern, or exceptional craftsmanship).
+
+IMPORTANT:
+- Output MUST be valid JSON, with **no** extra text outside the braces.
+- The JSON must have all six keys above: maker_analysis, signature_check, origin_analysis, marks_recognition, age_analysis, and visual_search.
+- Do not include any additional keys beyond these.
+`;
+
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
