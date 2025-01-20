@@ -246,15 +246,12 @@ class SheetsService {
 
     try {
       console.log('Attempting to update email submission in Google Sheets...');
-      
-      // Get auth client
       const client = await this.auth.getClient();
-      console.log('Auth client obtained successfully');
 
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:F',
+        range: 'Sheet1!A:J',
       });
 
       const rows = response.data.values || [];
@@ -265,13 +262,21 @@ class SheetsService {
         return false;
       }
 
-      // Update the row with email (column G)
-      await this.sheets.spreadsheets.values.update({
+      // Update multiple columns in a single request
+      await this.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: this.sheetsId,
-        range: `Sheet1!G${rowIndex + 1}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [[email]]
+          data: [
+            {
+              range: `Sheet1!I${rowIndex + 1}`,
+              values: [[email]]
+            },
+            {
+              range: `Sheet1!J${rowIndex + 1}`,
+              values: [['Email Sent']]
+            }
+          ]
         }
       });
 
