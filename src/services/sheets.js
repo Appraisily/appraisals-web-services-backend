@@ -262,7 +262,7 @@ class SheetsService {
         return false;
       }
 
-      // Update multiple columns in a single request
+      // Update email, status, and forward email columns in a single request
       await this.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: this.sheetsId,
         valueInputOption: 'USER_ENTERED',

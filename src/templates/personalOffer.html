@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Professional Art Appraisal Offer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f9fafb;
+      color: #1f2937;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .logo {
+      width: 40px;
+      height: 40px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    
+    .company-name {
+      display: inline-block;
+      vertical-align: middle;
+      font-size: 24px;
+      font-weight: bold;
+      color: #1f2937;
+    }
+    
+    .content {
+      color: #4b5563;
+      font-size: 16px;
+      padding: 0 8px;
+    }
+    
+    .heading {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .offer-container {
+      margin: 32px 0;
+      padding: 24px;
+      background-color: #f0f9ff;
+      border-radius: 12px;
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .signature {
+      margin: 32px 0;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .expert-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .expert-photo {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+    }
+
+    .expert-details {
+      flex: 1;
+    }
+
+    .expert-name {
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+
+    .expert-title {
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 14px;
+      color: #4b5563;
+      text-align: center;
+    }
+    
+    .footer a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background-color: #007bff;
+      color: #ffffff !important;
+      padding: 16px 32px;
+      margin: 24px 0;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    
+    .cta-button:hover {
+      background-color: #0056b3;
+    }
+
+    .offer-highlight {
+      background-color: #fef3c7;
+      color: #92400e;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .timer-box {
+      background-color: #fee2e2;
+      color: #991b1b;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-align: center;
+      margin: 16px 0;
+      font-weight: 500;
+    }
+    
+    @media only screen and (max-width: 600px) {
+      body {
+        padding: 16px;
+      }
+      
+      .container {
+        padding: 24px;
+      }
+      
+      .logo {
+        width: 35px;
+        height: 35px;
+      }
+      
+      .company-name {
+        font-size: 20px;
+      }
+
+      .expert-info {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center" style="padding-bottom: 32px;">
+          <h1 class="heading">Special Professional Appraisal Offer</h1>
+          <table border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td>
+                <img src="http://cdn.mcauto-images-production.sendgrid.net/304ac75ef1d5c007/8aeb2689-2b5b-402d-a6f3-6521621e123a/300x300.png" alt="Appraisily Logo" class="logo" width="40" height="40" style="vertical-align: middle;">
+              </td>
+              <td style="padding-left: 10px;">
+                <span class="company-name" style="vertical-align: middle;">Appraisily</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div class="content">
+      {{email_content}}
+
+      <div class="timer-box">
+        🕒 This special offer expires in 48 hours
+      </div>
+
+      <div style="text-align: center;">
+        <a href="https://buy.stripe.com/9AQaIKd925jC6Ag6pQ?prefilled_promo_code=FRIENDS20" class="cta-button">
+          Get Professional Appraisal Now
+        </a>
+      </div>
+
+      <div class="signature">
+        <div class="expert-info">
+          <img src="http://cdn.mcauto-images-production.sendgrid.net/304ac75ef1d5c007/d8f43e47-b3c8-4a7a-8c0e-c23c39f396e8/400x400.jpg" alt="Andrés Gómez" class="expert-photo">
+          <div class="expert-details">
+            <p class="expert-name">Andrés Gómez</p>
+            <p class="expert-title">Lead Art Appraiser at Appraisily</p>
+            <p style="margin: 4px 0 0 0; font-size: 14px;">Member of the International Society of Appraisers</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Visit our website at <a href="https://www.appraisily.com">www.appraisily.com</a></p>
+      <p>&copy; ${new Date().getFullYear()} Appraisily. All rights reserved.</p>
+      <p>This is a personal email from our lead appraiser. Please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>

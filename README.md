@@ -226,11 +226,65 @@ Response: {
   "emailHash": string,
   "submissionTime": number
 }
-```
-- Rate limited to 5 requests per minute
-- Email validation
-- Secure storage with encryption
-- Sends professional analysis report
+
+#### Process Flow
+1. Request Validation
+   - Rate limiting check (5 requests per minute per IP)
+   - Validates required fields (email and sessionId)
+   - Email format validation
+
+2. Session Verification
+   - Checks if session exists in cloud storage
+   - Loads session metadata
+
+3. Email Security
+   - Generates Argon2id hash of email address
+   - Encrypts email using AES-256-GCM
+   - Stores encrypted email in session metadata
+
+4. Analysis Processing
+   - Checks for existing analyses (visual search, origin, detailed)
+   - If any analysis is missing:
+     - Performs visual search analysis
+     - Performs origin analysis
+     - Performs detailed analysis
+   - All analyses run in parallel for efficiency
+
+5. Report Generation
+   - Composes comprehensive HTML report including:
+     - Visual analysis results
+     - Origin analysis findings
+     - Detailed expert analysis
+     - Professional recommendations
+
+6. Two-Step Email Delivery
+   - Initial Email (Immediate):
+     - Sends comprehensive analysis report
+     - Uses professional HTML template
+     - Includes detailed findings and insights
+   - Follow-up Email (24 hours later):
+     - Sent from personal expert email address
+     - Includes personalized observations about the item
+     - Offers special limited-time pricing ($47 instead of $59)
+     - 48-hour expiry window for special offer
+     - Customized based on analysis results
+
+7. Data Logging
+   - Updates Google Sheets log with:
+     - Email submission timestamp
+     - Session information
+     - Analysis status
+
+8. Response
+   - Returns success status
+   - Includes email hash for reference
+   - Provides submission timestamp
+
+#### Security Features
+- Rate limiting protection
+- Email encryption (AES-256-GCM)
+- Secure hash storage (Argon2id)
+- No plaintext email storage
 
 ## Project Structure
 
@@ -299,6 +353,11 @@ The following secrets must be configured in Google Cloud Secret Manager:
 - `SENDGRID_API_KEY`
 - `SENDGRID_EMAIL`
 - `SEND_GRID_TEMPLATE_FREE_REPORT`
+- `SEND_GRID_TEMPLATE_PERSONAL_OFFER`
+- `SENDGRID_PERSONAL_EMAIL`
+- `DIRECT_API_KEY`
+- `SEND_GRID_TEMPLATE_PERSONAL_OFFER`
+- `SENDGRID_PERSONAL_EMAIL`
 
 ## Dependencies
 

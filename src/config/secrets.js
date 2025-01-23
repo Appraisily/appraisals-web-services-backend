@@ -32,6 +32,9 @@ const loadSecrets = async () => {
       SENDGRID_API_KEY: await getSecret('SENDGRID_API_KEY'), 
       SENDGRID_EMAIL: await getSecret('SENDGRID_EMAIL'),
       SEND_GRID_TEMPLATE_FREE_REPORT: await getSecret('SEND_GRID_TEMPLATE_FREE_REPORT'),
+      SEND_GRID_TEMPLATE_PERSONAL_OFFER: await getSecret('SEND_GRID_TEMPLATE_PERSONAL_OFFER'),
+      SENDGRID_PERSONAL_EMAIL: await getSecret('SENDGRID_PERSONAL_EMAIL'),
+      DIRECT_API_KEY: await getSecret('DIRECT_API_KEY'),
       SHEETS_ID_FREE_REPORTS_LOG: await getSecret('SHEETS_ID_FREE_REPORTS_LOG')
     };
     console.log('All secrets loaded successfully.');

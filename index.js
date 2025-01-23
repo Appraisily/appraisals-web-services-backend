@@ -52,7 +52,10 @@ const init = async () => {
     emailService.initialize(
       secrets.SENDGRID_API_KEY,
       secrets.SENDGRID_EMAIL,
-      secrets.SEND_GRID_TEMPLATE_FREE_REPORT
+      secrets.SEND_GRID_TEMPLATE_FREE_REPORT,
+      secrets.SEND_GRID_TEMPLATE_PERSONAL_OFFER,
+      secrets.SENDGRID_PERSONAL_EMAIL,
+      secrets.DIRECT_API_KEY
     );
 
     const PORT = process.env.PORT || 8080;
