@@ -38,7 +38,8 @@ const init = async () => {
     await cloudServices.initialize(
       secrets.GOOGLE_CLOUD_PROJECT_ID,
       keyFilePath,
-      secrets.GCS_BUCKET_NAME
+      secrets.GCS_BUCKET_NAME,
+      secrets.OPENAI_API_KEY
     );
 
     // Initialize encryption service
