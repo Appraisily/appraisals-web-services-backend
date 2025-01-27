@@ -54,7 +54,7 @@ const init = async () => {
       secrets.SENDGRID_EMAIL,
       secrets.SEND_GRID_TEMPLATE_FREE_REPORT,
       secrets.SEND_GRID_TEMPLATE_PERSONAL_OFFER,
-      secrets.SENDGRID_PERSONAL_EMAIL,
+      secrets.SENDGRID_EMAIL,
       secrets.DIRECT_API_KEY
     );
 

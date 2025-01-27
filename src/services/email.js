@@ -28,6 +28,7 @@ class EmailService {
   async generatePersonalizedEmail(analysisData) {
     console.log('\n=== Michelle API Request ===');
     console.log('Analysis Data:', JSON.stringify(analysisData, null, 2));
+    console.log('Using sender email:', this.fromEmail);
 
     const prompt = `You are an expert art appraiser writing a personalized follow-up email to potential clients. Your goal is to convert their free art analysis into a professional appraisal service.
 
@@ -88,7 +89,7 @@ Remember: The goal is to demonstrate expertise while building trust and creating
     const requestBody = {
       text: prompt,
       senderName: 'Andrés Gómez',
-      senderEmail: this.personalEmail
+      senderEmail: this.fromEmail
     };
 
     console.log('\nRequest Body:', JSON.stringify(requestBody, null, 2));
@@ -148,7 +149,7 @@ Remember: The goal is to demonstrate expertise while building trust and creating
       const personalMsg = {
         to: toEmail,
         from: {
-          email: this.personalEmail,
+          email: this.fromEmail,
           name: 'Andrés - Art Expert'
         },
         subject: subject,
@@ -156,7 +157,7 @@ Remember: The goal is to demonstrate expertise while building trust and creating
       };
 
       console.log('\nSending email via SendGrid...');
-      console.log('From:', this.personalEmail);
+      console.log('From:', this.fromEmail);
       console.log('Sender Name: Andrés - Art Expert');
 
       await sgMail.send(personalMsg);
