@@ -45,7 +45,7 @@ router.post('/submit-email', limiter, async (req, res) => {
     const bucket = cloudServices.getBucket();
     const metadataFile = bucket.file(`${sessionFolder}/metadata.json`);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    console.log(`Processing email submission for session ${sessionId}`);
+    console.log(`Starting email submission process for session ${sessionId}`);
 
     const [exists] = await metadataFile.exists();
 
@@ -79,6 +79,14 @@ router.post('/submit-email', limiter, async (req, res) => {
       metadata: {
         cacheControl: 'no-cache'
       }
+    });
+
+    // Send immediate success response to client
+    res.json({
+      success: true,
+      message: 'Email submission received. Analysis in progress.',
+      emailHash,
+      submissionTime: metadata.email.submissionTime
     });
 
     // Check for existing analyses
@@ -204,13 +212,6 @@ router.post('/submit-email', limiter, async (req, res) => {
       throw emailSent.reason;
     }
 
-    res.json({
-      success: true,
-      message: 'Email submitted successfully.',
-      emailHash,
-      submissionTime: metadata.email.submissionTime
-    });
-
   } catch (error) {
     try {
       // Try to update sheets one more time if it failed earlier
@@ -225,11 +226,14 @@ router.post('/submit-email', limiter, async (req, res) => {
     }
 
     console.error('Error processing email submission:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error processing email submission.',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error.'
-    });
+    // Only send error response if we haven't sent the success response yet
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Error processing email submission.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error.'
+      });
+    }
   }
 });
 

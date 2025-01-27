@@ -145,8 +145,33 @@ Remember: The goal is to demonstrate expertise while building trust and creating
     console.log('\n=== Starting Personal Offer Email Process ===');
     console.log(`Recipient: ${toEmail}`);
 
+    const bucket = require('../services/storage').getBucket();
+    const sessionId = analysisData?.sessionId;
+
+    if (!sessionId) {
+      throw new Error('Session ID not available in analysis data');
+    }
+
+    // Function to check for detailed analysis in GCS
+    const checkDetailedAnalysis = async () => {
+      try {
+        const detailedFile = bucket.file(`sessions/${sessionId}/detailed.json`);
+        const [exists] = await detailedFile.exists();
+        
+        if (exists) {
+          const [content] = await detailedFile.download();
+          return JSON.parse(content.toString());
+        }
+        return null;
+      } catch (error) {
+        console.error('Error checking detailed analysis:', error);
+        return null;
+      }
+    };
+
     // Wait for detailed analysis if not available
-    if (!analysisData?.detailedAnalysis) {
+    let detailedAnalysis = analysisData?.detailedAnalysis;
+    if (!detailedAnalysis) {
       console.log('Detailed analysis not available, waiting for results...');
       let retries = 0;
       const maxRetries = 5;
@@ -154,15 +179,17 @@ Remember: The goal is to demonstrate expertise while building trust and creating
 
       while (retries < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
-        if (analysisData?.detailedAnalysis) {
+        detailedAnalysis = await checkDetailedAnalysis();
+        if (detailedAnalysis) {
           console.log('Detailed analysis now available, proceeding with email generation');
+          analysisData.detailedAnalysis = detailedAnalysis;
           break;
         }
         retries++;
         console.log(`Waiting for detailed analysis... (attempt ${retries}/${maxRetries})`);
       }
 
-      if (!analysisData?.detailedAnalysis) {
+      if (!detailedAnalysis) {
         console.error('Detailed analysis not available after waiting');
         throw new Error('Detailed analysis not available');
       }
