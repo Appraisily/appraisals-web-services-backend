@@ -37,22 +37,30 @@ const getSecret = async (secretName) => {
 const loadSecrets = async () => {
   try {
     console.log('Loading secrets from Secret Manager...');
-    
-    // Load all secrets in parallel
-    const secretPromises = REQUIRED_SECRETS.map(async (secretName) => {
-      const value = await getSecret(secretName);
-      return [secretName.replace(/-/g, '_'), value];
-    });
-    
-    const secretEntries = await Promise.all(secretPromises);
-    const secrets = Object.fromEntries(secretEntries);
+    const secrets = {};
+
+    // Load all secrets in parallel with proper mapping
+    await Promise.all(REQUIRED_SECRETS.map(async (secretName) => {
+      try {
+        const value = await getSecret(secretName);
+        // Special handling for service-account-json
+        if (secretName === 'service-account-json') {
+          secrets.service_account_json = value;
+        } else {
+          secrets[secretName.replace(/-/g, '_').toUpperCase()] = value;
+        }
+      } catch (error) {
+        console.error(`Failed to load secret ${secretName}:`, error);
+        throw error;
+      }
+    }));
     
     console.log('All secrets loaded successfully.');
 
     // Write service account JSON to temporary file
     const keyFilePath = path.join(__dirname, '../../keyfile.json');
     console.log(`Writing service account JSON to ${keyFilePath}.`);
-    await fs.writeFile(keyFilePath, secrets.SERVICE_ACCOUNT_JSON);
+    await fs.writeFile(keyFilePath, secrets.service_account_json);
     console.log('Service account JSON written successfully.');
 
     return { secrets, keyFilePath };
