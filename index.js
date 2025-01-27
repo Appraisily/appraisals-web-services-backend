@@ -42,6 +42,9 @@ const init = async () => {
       secrets.OPENAI_API_KEY
     );
 
+    // Initialize sheets service
+    sheetsService.initialize(keyFilePath);
+
     // Initialize encryption service
     encryption.initialize(secrets.EMAIL_ENCRYPTION_KEY);
 

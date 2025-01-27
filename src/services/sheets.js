@@ -9,10 +9,9 @@ class SheetsService {
   }
 
   initialize(keyFilePath, sheetsId) {
-    if (!keyFilePath || !sheetsId) {
-      throw new Error('Service account key file and sheets ID are required');
+    if (!keyFilePath) {
+      throw new Error('Service account key file is required');
     }
-    this.sheetsId = sheetsId;
 
     try {
       console.log('Initializing Google Sheets service...');
@@ -26,7 +25,6 @@ class SheetsService {
         auth: this.auth 
       });
       
-      this.sheetsId = sheetsId;
       this.initialized = true;
       console.log('Google Sheets service initialized successfully');
     } catch (error) {

@@ -1,7 +1,6 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
-const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -60,13 +59,12 @@ router.post('/full-analysis', async (req, res) => {
       // Log new analysis to sheets
       try {
         await sheetsService.updateDetailedAnalysis(
-          sessionId,
-          detailedAnalysis
-        ).catch(error => {
-          console.error('Failed to log detailed analysis to sheets:', error);
-        });
+          sessionId, 
+          detailedAnalysis,
+        );
       } catch (error) {
-        console.error('Error logging to sheets:', error);
+        // Log error but don't fail the request
+        console.error('Failed to log detailed analysis to sheets:', error);
       }
     }
 
