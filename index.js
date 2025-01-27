@@ -43,7 +43,7 @@ const init = async () => {
     );
 
     // Initialize sheets service
-    sheetsService.initialize(keyFilePath);
+    sheetsService.initialize(keyFilePath, secrets.SHEETS_ID_FREE_REPORTS_LOG);
 
     // Initialize encryption service
     encryption.initialize(secrets.EMAIL_ENCRYPTION_KEY);
