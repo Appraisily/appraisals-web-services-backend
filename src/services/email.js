@@ -112,8 +112,23 @@ Remember: The goal is to demonstrate expertise while building trust and creating
 
       const data = await response.json();
       console.log('\nMichelle API Response Data:', JSON.stringify(data, null, 2));
+      
+      // Extract subject and content from the response text
+      const responseText = data.response.text;
+      const subjectMatch = responseText.match(/Subject Line: (.*?)\n/);
+      const bodyMatch = responseText.match(/Email Body:\n\n([\s\S]*)/);
+      
+      if (!subjectMatch || !bodyMatch) {
+        throw new Error('Invalid email format in response');
+      }
+      
+      const emailContent = {
+        subject: subjectMatch[1].trim(),
+        content: bodyMatch[1].trim()
+      };
+      
       console.log('=== End Michelle API Request ===\n');
-      return JSON.parse(data.text);
+      return emailContent;
     } catch (error) {
       console.error('\nError generating email content:', error);
       console.error('Error details:', error.stack);
@@ -129,6 +144,30 @@ Remember: The goal is to demonstrate expertise while building trust and creating
     
     console.log('\n=== Starting Personal Offer Email Process ===');
     console.log(`Recipient: ${toEmail}`);
+
+    // Wait for detailed analysis if not available
+    if (!analysisData?.detailedAnalysis) {
+      console.log('Detailed analysis not available, waiting for results...');
+      let retries = 0;
+      const maxRetries = 5;
+      const retryDelay = 2000; // 2 seconds
+
+      while (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        if (analysisData?.detailedAnalysis) {
+          console.log('Detailed analysis now available, proceeding with email generation');
+          break;
+        }
+        retries++;
+        console.log(`Waiting for detailed analysis... (attempt ${retries}/${maxRetries})`);
+      }
+
+      if (!analysisData?.detailedAnalysis) {
+        console.error('Detailed analysis not available after waiting');
+        throw new Error('Detailed analysis not available');
+      }
+    }
+
     console.log('Analysis Data Summary:', {
       itemType: analysisData.detailedAnalysis?.maker_analysis?.creator_name || 'Not specified',
       origin: analysisData.detailedAnalysis?.origin_analysis?.likely_origin || 'Not specified',

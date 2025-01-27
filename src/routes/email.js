@@ -113,28 +113,49 @@ router.post('/submit-email', limiter, async (req, res) => {
       }
 
       console.log(`Performing ${endpoint} analysis...`);
+      console.log(`Request URL: ${baseUrl}/${endpoint}`);
+      console.log(`Request body:`, { sessionId });
+
       const response = await fetch(`${baseUrl}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
       });
 
+      const responseText = await response.text();
+      console.log(`Response status: ${response.status}`);
+      console.log(`Response body: ${responseText}`);
+
       if (!response.ok) {
-        throw new Error(`Failed to perform ${endpoint} analysis`);
+        throw new Error(`Failed to perform ${endpoint} analysis: ${response.status} ${responseText}`);
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (error) {
+        console.error(`Error parsing ${endpoint} response:`, error);
+        throw new Error(`Invalid JSON response from ${endpoint}`);
+      }
+
+      if (!result.success) {
+        throw new Error(`${endpoint} analysis failed: ${result.message}`);
+      }
+
       let content = endpoint === 'full-analysis' ? result.results.detailedAnalysis : result.results;
       
       // Save the analysis result
       console.log(`Saving ${endpoint} analysis results...`);
+      console.log(`Content to save:`, JSON.stringify(content, null, 2));
+
       await file.save(JSON.stringify(content, null, 2), {
         contentType: 'application/json',
         metadata: {
           cacheControl: 'no-cache'
         }
       }).catch(error => {
-        console.error(`Error saving ${endpoint} analysis:`, error);
+        console.error(`Error saving ${endpoint} analysis to file:`, error);
+        throw error;
       });
 
       return content;
