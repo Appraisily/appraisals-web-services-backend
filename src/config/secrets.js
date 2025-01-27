@@ -30,12 +30,7 @@ const loadSecrets = async () => {
       OPENAI_API_KEY: await getSecret('OPENAI_API_KEY'),
       EMAIL_ENCRYPTION_KEY: await getSecret('EMAIL_ENCRYPTION_KEY'),
       SENDGRID_API_KEY: await getSecret('SENDGRID_API_KEY'), 
-      SENDGRID_EMAIL: await getSecret('SENDGRID_EMAIL'),
-      SEND_GRID_TEMPLATE_FREE_REPORT: await getSecret('SEND_GRID_TEMPLATE_FREE_REPORT'),
-      SEND_GRID_TEMPLATE_PERSONAL_OFFER: await getSecret('SEND_GRID_TEMPLATE_PERSONAL_OFFER'),
-      SENDGRID_PERSONAL_EMAIL: await getSecret('SENDGRID_PERSONAL_EMAIL'),
-      DIRECT_API_KEY: await getSecret('DIRECT_API_KEY'),
-      SHEETS_ID_FREE_REPORTS_LOG: await getSecret('SHEETS_ID_FREE_REPORTS_LOG')
+      SENDGRID_EMAIL: await getSecret('SENDGRID_EMAIL')
     };
     console.log('All secrets loaded successfully.');
 
