@@ -128,27 +128,36 @@ Remember: The goal is to demonstrate expertise while building trust and creating
     }
   }
 
-  async sendPersonalOffer(toEmail, analysisData) {
+  async sendPersonalOffer(toEmail, analysisData, immediate = false) {
     if (!this.initialized) {
       throw new Error('Email service not initialized');
     }
 
     try {
-      // Generate personalized email content using Michelle's API
       const emailContent = await this.generatePersonalizedEmail(analysisData);
       const { subject, content } = emailContent;
 
-      const personalMsg = {
+      // If immediate flag is true, send right away
+      if (!immediate) {
+        console.log('Skipping immediate send of personal offer - will be sent by scheduled task');
+        return;
+      }
+
+      // Use SendGrid dynamic template
+      const msg = {
         to: toEmail,
         from: {
           email: this.personalEmail,
           name: 'Andrés - Art Expert'
         },
-        subject: subject,
-        html: content
+        templateId: this.personalOfferTemplateId,
+        dynamicTemplateData: {
+          subject: subject,
+          email_content: content
+        }
       };
 
-      await sgMail.send(personalMsg);
+      await sgMail.send(msg);
       console.log(`Personal offer email sent to ${toEmail}`);
     } catch (error) {
       console.error('Error sending personal offer email:', error);
