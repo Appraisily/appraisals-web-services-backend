@@ -9,9 +9,10 @@ class SheetsService {
   }
 
   initialize(keyFilePath, sheetsId) {
-    if (!keyFilePath) {
-      throw new Error('Service account key file is required');
+    if (!keyFilePath || !sheetsId) {
+      throw new Error('Service account key file and sheets ID are required');
     }
+    this.sheetsId = sheetsId;
 
     try {
       console.log('Initializing Google Sheets service...');
@@ -23,7 +24,7 @@ class SheetsService {
       this.sheets = google.sheets({ 
         version: 'v4', 
         auth: this.auth 
-      });
+      });      
       
       this.initialized = true;
       console.log('Google Sheets service initialized successfully');
@@ -36,6 +37,9 @@ class SheetsService {
   async updateVisualSearchResults(sessionId, analysisJson, category) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');
+    }
+    if (!this.sheetsId) {
+      throw new Error('Sheets ID not set');
     }
 
     try {

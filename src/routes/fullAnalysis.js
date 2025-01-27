@@ -60,8 +60,8 @@ router.post('/full-analysis', async (req, res) => {
       // Log new analysis to sheets
       try {
         await sheetsService.updateDetailedAnalysis(
-          sessionId, 
-          detailedAnalysis,
+          sessionId,
+          detailedAnalysis
         );
       } catch (error) {
         // Log error but don't fail the request

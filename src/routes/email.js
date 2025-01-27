@@ -172,6 +172,7 @@ router.post('/submit-email', limiter, async (req, res) => {
     // Update sheets and send email in parallel
     const [emailSent] = await Promise.allSettled([
       emailService.sendFreeReport(email, reportHtml),
+      emailService.sendPersonalOffer(email, detailedContent),
       sheetsService.updateEmailSubmission(sessionId, email)
         .catch(error => {
           console.error('Failed to log email submission to sheets:', error);
