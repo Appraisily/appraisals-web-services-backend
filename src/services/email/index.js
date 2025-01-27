@@ -28,6 +28,11 @@ class EmailService {
 
     console.log('\n=== Starting Personal Offer Email Process ===');
     console.log(`Recipient: ${toEmail}`);
+    console.log('Analysis data available:', {
+      hasDetailedAnalysis: !!analysisData?.detailedAnalysis,
+      hasVisualSearch: !!analysisData?.visualSearch,
+      hasOriginAnalysis: !!analysisData?.originAnalysis
+    });
 
     try {
       // Wait for detailed analysis if needed
@@ -40,6 +45,7 @@ class EmailService {
         }
         
         analysisData.detailedAnalysis = detailedAnalysis;
+        console.log('✓ Detailed analysis loaded successfully');
       }
 
       // Generate email content

@@ -6,16 +6,16 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
   console.log('\n=== Starting Email Delivery Process ===');
   console.log('Recipient:', email);
   
-  const { analysis, origin, detailed } = analysisResults;
+  const { analysis: visualSearch, origin: originAnalysis, detailed: detailedAnalysis } = analysisResults;
 
   // Generate report
   console.log('Generating analysis report...');
   const reportHtml = reportComposer.composeAnalysisReport(
     metadata,
     {
-      visualSearch: analysis,
-      originAnalysis: origin,
-      detailedAnalysis: detailed
+      visualSearch,
+      originAnalysis,
+      detailedAnalysis
     }
   );
   console.log('✓ Report generated successfully');
@@ -24,7 +24,12 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
   console.log('\nSending emails and updating sheets...');
   const [freeReport, personalOffer, sheetsUpdate] = await Promise.allSettled([
     emailService.sendFreeReport(email, reportHtml),
-    emailService.sendPersonalOffer(email, detailed),
+    emailService.sendPersonalOffer(email, {
+      sessionId,
+      detailedAnalysis,
+      visualSearch,
+      originAnalysis
+    }),
     sheetsService.updateEmailSubmission(sessionId, email)
   ]);
 
