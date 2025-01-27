@@ -45,8 +45,20 @@ A robust Node.js backend service for art and antique image analysis using Google
 - Professional HTML email templates
 - Secure email encryption
 - Rate-limited submissions (5 requests per minute)
-- Analysis report generation
-- CTA for professional services
+- Dynamic email content generation
+- Personalized offer emails via Michelle API
+- Professional HTML templates with SendGrid
+- Comprehensive analysis reports
+- Smart retry logic for analysis completion
+- Parallel email delivery
+
+### Email Service Architecture
+- Modular service structure
+- Dedicated services for:
+  - SendGrid email delivery
+  - Michelle API content generation
+  - Analysis processing and validation
+  - Email security and encryption
 - Dynamic SendGrid templates for personalized offers
 - Michelle API integration for content generation
 
@@ -231,20 +243,73 @@ Response: {
 
 #### Process Flow
 1. Request Validation
-   - Rate limiting check (5 requests per minute per IP)
-   - Validates required fields (email and sessionId)
-   - Email format validation
+   - Rate limiting (5 requests/minute/IP)
+   - Input validation (email format, required fields)
+   - Session existence verification
 
 2. Session Verification
    - Checks if session exists in cloud storage
    - Loads session metadata
+   - Validates session state
 
 3. Email Security
    - Generates Argon2id hash of email address
    - Encrypts email using AES-256-GCM
    - Stores encrypted email in session metadata
+   - Prepares for future email verification
 
 4. Analysis Processing
+   - Checks existing analysis files
+   - Parallel processing of missing analyses:
+     - Visual search
+     - Origin analysis
+     - Detailed analysis
+   - Smart retry logic for analysis completion
+   - Timeout handling (30s per analysis)
+
+5. Report Generation
+   - Composes HTML report with:
+     - Visual analysis results
+     - Origin analysis findings
+     - Detailed expert analysis
+     - Professional recommendations
+   - Applies SendGrid-safe HTML escaping
+
+6. Email Delivery
+   - Parallel email sending:
+     - Immediate analysis report
+     - Personalized offer email
+   - Uses SendGrid for delivery
+   - Tracks delivery status
+
+7. Personal Offer Generation
+   - Integrates with Michelle API
+   - Generates personalized content based on analysis
+   - Includes:
+     - Custom subject line
+     - Personalized observations
+     - Special pricing offer
+     - 48-hour expiry window
+
+8. Error Handling
+   - Comprehensive error logging
+   - Graceful failure recovery
+   - Parallel operation status tracking
+   - Detailed process logging
+
+9. Data Logging
+   - Updates Google Sheets log
+   - Tracks:
+     - Email submission
+     - Analysis status
+     - Delivery status
+     - Timestamps
+
+10. Response Handling
+   - Immediate client response
+   - Background processing
+   - Status updates
+   - Error notifications
    - Checks for existing analyses (visual search, origin, detailed)
    - If any analysis is missing:
      - Performs visual search analysis
@@ -303,18 +368,28 @@ src/
 ├── routes/
 │   ├── email.js         # Email handling
 │   ├── originAnalysis.js # Origin analysis
-│   ├── session.js       # Session management
-│   ├── upload.js        # File uploads
-│   └── visualSearch.js  # Visual search
+│   ├── session.js        # Session management
+│   ├── upload.js         # File uploads
+│   ├── visualSearch.js   # Visual search
+│   ├── fullAnalysis.js   # Detailed analysis
+│   └── health.js         # Health checks
 ├── services/
-│   ├── email.js         # Email service
+│   ├── email/           # Email services
+│   │   ├── index.js           # Main email service
+│   │   ├── SendGridService.js # SendGrid integration
+│   │   ├── MichelleService.js # Michelle API integration
+│   │   ├── AnalysisService.js # Analysis processing
+│   │   ├── validation.js      # Email validation
+│   │   ├── analysis.js        # Analysis orchestration
+│   │   └── delivery.js        # Email delivery
 │   ├── encryption.js    # AES encryption
 │   ├── openai.js        # OpenAI integration
 │   ├── originFormatter.js # Analysis formatting
 │   ├── reportComposer.js # Email report generation
 │   └── storage.js       # Cloud storage
 ├── templates/
-   └── emails.js        # Free report email template
+   ├── emails.js         # Free report email template
+   └── personalOffer.html # Personal offer template
 └── utils/
     ├── dateFormatter.js # Date formatting
     └── urlValidator.js  # URL validation
@@ -358,7 +433,6 @@ The following secrets must be configured in Google Cloud Secret Manager:
 - `SENDGRID_EMAIL`
 - `SEND_GRID_TEMPLATE_FREE_REPORT`
 - `SEND_GRID_TEMPLATE_PERSONAL_OFFER`
-- `SENDGRID_PERSONAL_EMAIL`
 - `DIRECT_API_KEY` (for Michelle API)
 
 ## Dependencies
@@ -392,12 +466,19 @@ The following secrets must be configured in Google Cloud Secret Manager:
 ## Performance Optimizations
 
 - Parallel API processing
+- Smart retry logic for analysis
+- Efficient email delivery
+- Background processing
 - Memory-efficient file uploads using streams
 - Response caching
 - Metadata optimization
 - URL validation with timeouts (5s)
 - Limited similar image processing (max 5)
-- Parallel API processing for email content generation
+- Parallel operations:
+  - Analysis processing
+  - Email delivery
+  - Content generation
+  - Sheet updates
 
 ## Development
 
@@ -424,8 +505,3 @@ Build and run using Docker:
 ```bash
 docker build -t art-appraisal-backend .
 docker run -p 8080:8080 art-appraisal-backend
-```
-
-## License
-
-MIT
