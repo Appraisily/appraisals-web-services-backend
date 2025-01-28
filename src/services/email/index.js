@@ -21,7 +21,7 @@ class EmailService {
     this.initialized = true;
   }
 
-  async sendPersonalOffer(toEmail, analysisData) {
+  async sendPersonalOffer(toEmail, subject, analysisData, scheduledTime = null) {
     if (!this.initialized) {
       throw new Error('Email service not initialized');
     }
@@ -49,11 +49,20 @@ class EmailService {
       }
 
       // Generate email content
-      const { subject, content } = await michelleService.generateContent(analysisData);
+      const { subject: generatedSubject, content } = await michelleService.generateContent(analysisData);
       
-      // Send email
-      const result = await sendGridService.sendPersonalOffer(toEmail, subject, content);
-      console.log('✓ Personal offer email sent successfully');
+      // Send email with scheduling
+      const result = await sendGridService.sendPersonalOffer(
+        toEmail, 
+        subject || generatedSubject, 
+        content,
+        scheduledTime
+      );
+      
+      console.log(scheduledTime ? 
+        `✓ Personal offer email scheduled for ${new Date(scheduledTime).toISOString()}` :
+        '✓ Personal offer email sent immediately'
+      );
       
       return result;
     } catch (error) {

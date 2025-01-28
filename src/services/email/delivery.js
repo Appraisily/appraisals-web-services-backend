@@ -28,12 +28,17 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
   console.log('\nScheduling personal offer...');
   const scheduledTime = Date.now() + (60 * 60 * 1000); // 1 hour from now
   
-  const personalOffer = await emailService.sendPersonalOffer(email, {
-    sessionId,
-    detailedAnalysis,
-    visualSearch,
-    originAnalysis
-  }, scheduledTime);
+  const personalOffer = await emailService.sendPersonalOffer(
+    email,
+    'Special Professional Appraisal Offer', // Add explicit subject
+    {
+      sessionId,
+      detailedAnalysis,
+      visualSearch,
+      originAnalysis
+    },
+    scheduledTime  // Pass scheduledTime as the fourth argument
+  );
 
   // Update free report status
   try {
