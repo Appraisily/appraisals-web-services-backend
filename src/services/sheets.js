@@ -44,6 +44,49 @@ class SheetsService {
     return rows.findIndex(row => row[1] === sessionId);
   }
 
+  async logUpload(sessionId, timestamp, imageUrl) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Logging upload to Google Sheets...');
+      
+      // Get the next available row
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:A'
+      });
+      
+      const nextRow = (response.data.values || []).length + 1;
+      
+      // Add new row with upload data
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetsId,
+        range: `Sheet1!A${nextRow}:H${nextRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[
+            nextRow - 1,                    // A: Row number
+            sessionId,                      // B: Session ID
+            new Date(timestamp).toISOString(), // C: Upload Time
+            imageUrl,                       // D: Image URL
+            'Pending Analysis',             // E: Analysis Status
+            '',                            // F: Analysis Time
+            'Pending Origin',               // G: Origin Status
+            ''                             // H: Origin Time
+          ]]
+        }
+      });
+
+      console.log('Successfully logged upload to sheets');
+      return true;
+    } catch (error) {
+      console.error('Error logging upload to sheets:', error);
+      throw error;
+    }
+  }
+
   async updateEmailSubmission(sessionId, email) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');

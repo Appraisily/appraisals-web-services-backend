@@ -34,7 +34,8 @@ class SendGridService {
       templateId: this.personalOfferTemplateId,
       dynamicTemplateData: {
         subject: this.escapeHtmlForSendGrid(subject),
-        email_content: this.escapeHtmlForSendGrid(content)
+        email_content: this.escapeHtmlForSendGrid(content),
+        year: new Date().getFullYear()
       }
     };
 

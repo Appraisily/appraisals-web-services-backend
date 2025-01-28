@@ -2,6 +2,52 @@
 
 A robust Node.js backend service for art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and professional reporting capabilities.
 
+## Repository Structure
+
+```
+.
+├── Dockerfile
+├── README.md
+├── index.js
+├── package.json
+└── src/
+    ├── config/
+    │   ├── models.js        # OpenAI model configuration
+    │   ├── prompts.js       # System prompts for AI analysis
+    │   └── secrets.js       # Secret management configuration
+    ├── middleware/
+    │   └── cors.js          # CORS configuration
+    ├── routes/
+    │   ├── email.js         # Email submission handling
+    │   ├── fullAnalysis.js  # Complete artwork analysis
+    │   ├── health.js        # Health check endpoints
+    │   ├── originAnalysis.js # Origin determination
+    │   ├── session.js       # Session management
+    │   ├── upload.js        # File upload handling
+    │   └── visualSearch.js  # Visual search processing
+    ├── services/
+    │   ├── email/
+    │   │   ├── AnalysisService.js  # Analysis processing
+    │   │   ├── MichelleService.js  # Personal offer generation
+    │   │   ├── SendGridService.js  # Email delivery
+    │   │   ├── analysis.js         # Analysis orchestration
+    │   │   ├── delivery.js         # Email delivery orchestration
+    │   │   ├── index.js            # Main email service
+    │   │   └── validation.js       # Email validation
+    │   ├── encryption.js     # AES encryption utilities
+    │   ├── openai.js         # OpenAI integration
+    │   ├── originFormatter.js # Analysis formatting
+    │   ├── reportComposer.js # Email report generation
+    │   ├── sheets.js         # Google Sheets integration
+    │   └── storage.js        # Cloud storage management
+    ├── templates/
+    │   ├── emails.js         # Free report email template
+    │   └── personalOffer.html # Personal offer template
+    └── utils/
+        ├── dateFormatter.js   # Date formatting utilities
+        └── urlValidator.js    # URL validation utilities
+```
+
 ## Status
 
 ✅ **Production Ready**
@@ -40,27 +86,17 @@ A robust Node.js backend service for art and antique image analysis using Google
 - Google Cloud Vision API for image analysis
 - OpenAI GPT-4 Vision for expert analysis
 - SendGrid for email delivery
+- Google Sheets for logging and tracking
 
 ### Email Features
 - Professional HTML email templates
 - Secure email encryption
-- Rate-limited submissions (5 requests per minute)
+- Rate-limited submissions
 - Dynamic email content generation
-- Personalized offer emails via Michelle API
-- Professional HTML templates with SendGrid
+- Personalized offer emails
 - Comprehensive analysis reports
 - Smart retry logic for analysis completion
 - Parallel email delivery
-
-### Email Service Architecture
-- Modular service structure
-- Dedicated services for:
-  - SendGrid email delivery
-  - Michelle API content generation
-  - Analysis processing and validation
-  - Email security and encryption
-- Dynamic SendGrid templates for personalized offers
-- Michelle API integration for content generation
 
 ## API Endpoints
 
@@ -74,7 +110,7 @@ Content-Type: multipart/form-data
 }
 ```
 - Supports JPEG, PNG, WebP formats
-- 10MB file size limit with validation
+- 10MB file size limit
 - Returns session ID and image URL
 - Creates session storage structure
 
@@ -177,14 +213,7 @@ Response: {
   "success": boolean,
   "message": string,
   "results": {
-    "metadata": {
-      "originalName": string,
-      "timestamp": number,
-      "analyzed": boolean,
-      "mimeType": string,
-      "size": number,
-      "imageUrl": string
-    },
+    "metadata": object,
     "detailedAnalysis": {
       "maker_analysis": {
         "creator_name": string,
@@ -210,19 +239,10 @@ Response: {
         "similar_artworks": string,
         "notes": string
       }
-    },
-    "visualSearch": object,
-    "originAnalysis": object
-  },
-  "timestamp": number
+    }
+  }
 }
 ```
-- Performs comprehensive analysis including:
-  - Detailed AI analysis of maker, signature, origin, marks, and age
-  - Visual search results
-  - Origin analysis
-- Returns combined results from all analyses
-- Includes session metadata and timestamp
 
 ### Email Submission
 ```http
@@ -230,8 +250,8 @@ POST /submit-email
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
-  "sessionId": "uuid"
+  "email": string,
+  "sessionId": string
 }
 
 Response: {
@@ -240,185 +260,30 @@ Response: {
   "emailHash": string,
   "submissionTime": number
 }
-
-#### Process Flow
-1. Request Validation
-   - Rate limiting (5 requests/minute/IP)
-   - Input validation (email format, required fields)
-   - Session existence verification
-
-2. Session Verification
-   - Checks if session exists in cloud storage
-   - Loads session metadata
-   - Validates session state
-
-3. Email Security
-   - Generates Argon2id hash of email address
-   - Encrypts email using AES-256-GCM
-   - Stores encrypted email in session metadata
-   - Prepares for future email verification
-
-4. Analysis Processing
-   - Checks existing analysis files
-   - Parallel processing of missing analyses:
-     - Visual search
-     - Origin analysis
-     - Detailed analysis
-   - Smart retry logic for analysis completion
-   - Timeout handling (30s per analysis)
-
-5. Report Generation
-   - Composes HTML report with:
-     - Visual analysis results
-     - Origin analysis findings
-     - Detailed expert analysis
-     - Professional recommendations
-   - Applies SendGrid-safe HTML escaping
-
-6. Email Delivery
-   - Parallel email sending:
-     - Immediate analysis report
-     - Personalized offer email
-   - Uses SendGrid for delivery
-   - Tracks delivery status
-
-7. Personal Offer Generation
-   - Integrates with Michelle API
-   - Generates personalized content based on analysis
-   - Includes:
-     - Custom subject line
-     - Personalized observations
-     - Special pricing offer
-     - 48-hour expiry window
-
-8. Error Handling
-   - Comprehensive error logging
-   - Graceful failure recovery
-   - Parallel operation status tracking
-   - Detailed process logging
-
-9. Data Logging
-   - Updates Google Sheets log
-   - Tracks:
-     - Email submission
-     - Analysis status
-     - Delivery status
-     - Timestamps
-
-10. Response Handling
-   - Immediate client response
-   - Background processing
-   - Status updates
-   - Error notifications
-   - Checks for existing analyses (visual search, origin, detailed)
-   - If any analysis is missing:
-     - Performs visual search analysis
-     - Performs origin analysis
-     - Performs detailed analysis
-   - All analyses run in parallel for efficiency
-
-5. Report Generation
-   - Composes comprehensive HTML report including:
-     - Visual analysis results
-     - Origin analysis findings
-     - Detailed expert analysis
-     - Professional recommendations
-
-6. Email Delivery
-   - Initial Email:
-     - Sends comprehensive analysis report
-     - Uses professional HTML template
-     - Includes detailed findings and insights
-   - Follow-up Email (Immediate):
-     - Sent from personal expert email address
-     - Uses SendGrid dynamic template
-     - Content generated by Michelle API
-     - Includes personalized observations about the item
-     - Offers special limited-time pricing ($47 instead of $59)
-     - 48-hour expiry window for special offer
-     - Customized based on analysis results
-
-7. Data Logging
-   - Updates Google Sheets log with:
-     - Email submission timestamp
-     - Session information
-     - Analysis status
-
-8. Response
-   - Returns success status
-   - Includes email hash for reference
-   - Provides submission timestamp
-
-#### Security Features
-- Rate limiting protection
-- Email encryption (AES-256-GCM)
-- Secure hash storage (Argon2id)
-- No plaintext email storage
-
-## Project Structure
-
-```
-src/
-├── config/
-│   ├── models.js        # OpenAI model configuration
-│   ├── prompts.js       # System prompts
-│   └── secrets.js       # Secret management
-├── middleware/
-│   └── cors.js          # CORS configuration
-├── routes/
-│   ├── email.js         # Email handling
-│   ├── originAnalysis.js # Origin analysis
-│   ├── session.js        # Session management
-│   ├── upload.js         # File uploads
-│   ├── visualSearch.js   # Visual search
-│   ├── fullAnalysis.js   # Detailed analysis
-│   └── health.js         # Health checks
-├── services/
-│   ├── email/           # Email services
-│   │   ├── index.js           # Main email service
-│   │   ├── SendGridService.js # SendGrid integration
-│   │   ├── MichelleService.js # Michelle API integration
-│   │   ├── AnalysisService.js # Analysis processing
-│   │   ├── validation.js      # Email validation
-│   │   ├── analysis.js        # Analysis orchestration
-│   │   └── delivery.js        # Email delivery
-│   ├── encryption.js    # AES encryption
-│   ├── openai.js        # OpenAI integration
-│   ├── originFormatter.js # Analysis formatting
-│   ├── reportComposer.js # Email report generation
-│   └── storage.js       # Cloud storage
-├── templates/
-   ├── emails.js         # Free report email template
-   └── personalOffer.html # Personal offer template
-└── utils/
-    ├── dateFormatter.js # Date formatting
-    └── urlValidator.js  # URL validation
 ```
 
-## Security Features
+## Data Logging
 
-### Data Protection
-- AES-256-GCM encryption for sensitive data
-- Argon2id hashing for emails
-- Secure session management
-- Request rate limiting
-- URL validation with timeouts
-
-### Access Control
-- Domain-based CORS protection
-- File type validation
-- Size limits enforcement
-- Secure cloud storage access
-
-## Cloud Storage Structure
+### Google Sheets Structure
+The application logs all operations to a Google Sheet with the following columns:
 
 ```
-sessions/
-├── {sessionId}/
-│   ├── UserUploadedImage.{ext}
-│   ├── metadata.json      # Upload metadata and session info
-│   ├── analysis.json      # Visual search analysis results
-│   └── origin.json        # Origin analysis results
+A: Row Number
+B: Session ID
+C: Upload Time
+D: Image URL
+E: Analysis Status
+F: Analysis Time
+G: Origin Status
+H: Origin Time
+I: Email
+J: Email Submission Time
+K: Free Report Status
+L: Free Report Time
+M: Offer Status
+N: Offer Time
+O: Offer Delivered
+P: Offer Content
 ```
 
 ## Required Environment Variables
@@ -434,51 +299,7 @@ The following secrets must be configured in Google Cloud Secret Manager:
 - `SEND_GRID_TEMPLATE_FREE_REPORT`
 - `SEND_GRID_TEMPLATE_PERSONAL_OFFER`
 - `DIRECT_API_KEY` (for Michelle API)
-
-## Dependencies
-
-### Core Dependencies
-```json
-{
-  "@google-cloud/storage": "^6.9.2",
-  "@google-cloud/vision": "^4.2.0",
-  "@google-cloud/secret-manager": "^4.2.0",
-  "@sendgrid/mail": "^7.7.0",
-  "openai": "^4.0.0",
-  "express": "^4.18.2",
-  "cors": "^2.8.5",
-  "multer": "^1.4.5-lts.1",
-  "argon2": "^0.31.2",
-  "express-rate-limit": "^7.1.5",
-  "validator": "^13.11.0"
-}
-```
-
-## Error Handling
-
-- Environment-specific error responses
-- Detailed error logging
-- Graceful failure handling
-- Request validation
-- Session verification
-- URL validation timeouts
-
-## Performance Optimizations
-
-- Parallel API processing
-- Smart retry logic for analysis
-- Efficient email delivery
-- Background processing
-- Memory-efficient file uploads using streams
-- Response caching
-- Metadata optimization
-- URL validation with timeouts (5s)
-- Limited similar image processing (max 5)
-- Parallel operations:
-  - Analysis processing
-  - Email delivery
-  - Content generation
-  - Sheet updates
+- `SHEETS_ID_FREE_REPORTS_LOG`
 
 ## Development
 
@@ -505,3 +326,4 @@ Build and run using Docker:
 ```bash
 docker build -t art-appraisal-backend .
 docker run -p 8080:8080 art-appraisal-backend
+```
