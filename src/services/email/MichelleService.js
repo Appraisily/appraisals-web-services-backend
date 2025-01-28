@@ -52,6 +52,7 @@ OUTPUT REQUIREMENTS:
 4. Style the text freely—no strict structure—yet keep it succinct (around 200–300 words if possible).
 5. Use **friendly, natural language** that fits a direct yet professional tone.
 6. Avoid definitive value claims or guarantees; do not use placeholders or variables. Provide a plain, readable message.
+7. There is a button that redirects to the checkout with the disscount just after the text you are generating.
 
 Now, please produce your final answer **in valid JSON** with the structure:
 {

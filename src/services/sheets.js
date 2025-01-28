@@ -52,7 +52,7 @@ class SheetsService {
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:H',
+        range: 'Sheet1!A:M', // Extended range to include new columns
       });
 
       const rows = response.data.values || [];
@@ -96,7 +96,7 @@ class SheetsService {
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:H',
+        range: 'Sheet1!A:M',
       });
 
       const rows = response.data.values || [];
@@ -124,6 +124,7 @@ class SheetsService {
       return false;
     }
   }
+
   async updateOriginAnalysisResults(sessionId, originJson) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');
@@ -139,7 +140,7 @@ class SheetsService {
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:E',
+        range: 'Sheet1!A:M',
       });
 
       const rows = response.data.values || [];
@@ -209,14 +210,28 @@ class SheetsService {
         throw accessError;
       }
 
-      // Attempt to append the data
+      // Attempt to append the data with new columns initialized as empty
       try {
         const response = await this.sheets.spreadsheets.values.append({
           spreadsheetId: this.sheetsId,
-          range: 'Sheet1!A:C',
+          range: 'Sheet1!A:M',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [[formattedDate, sessionId, imageUrl]]
+            values: [[
+              formattedDate,      // A: Upload Date
+              sessionId,          // B: Session ID
+              imageUrl,           // C: Image URL
+              '',                 // D: Visual Search Results
+              '',                 // E: Category
+              '',                 // F: Origin Analysis
+              '',                 // G: Reserved
+              '',                 // H: Detailed Analysis
+              '',                 // I: Email
+              '',                 // J: Email Submission Time
+              '',                 // K: Email Status
+              '',                 // L: Offer Sent Time
+              ''                  // M: Offer Content
+            ]]
           }
         });
 
@@ -253,7 +268,7 @@ class SheetsService {
       // Find the row with matching sessionId
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.sheetsId,
-        range: 'Sheet1!A:J',
+        range: 'Sheet1!A:M',
       });
 
       const rows = response.data.values || [];
@@ -264,19 +279,19 @@ class SheetsService {
         return false;
       }
 
-      // Update email, status, and forward email columns in a single request
+      // Update email submission details
       await this.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: this.sheetsId,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           data: [
             {
-              range: `Sheet1!I${rowIndex + 1}`,
-              values: [[email]]
-            },
-            {
-              range: `Sheet1!J${rowIndex + 1}`,
-              values: [['Email Sent']]
+              range: `Sheet1!I${rowIndex + 1}:K${rowIndex + 1}`,
+              values: [[
+                email,                          // I: Email
+                new Date().toISOString(),       // J: Email Submission Time
+                'Email Submitted'               // K: Email Status
+              ]]
             }
           ]
         }
@@ -286,6 +301,55 @@ class SheetsService {
       return true;
     } catch (error) {
       console.error('Error updating email submission in sheets:', error);
+      return false;
+    }
+  }
+
+  async updateEmailOfferStatus(sessionId, offerContent) {
+    if (!this.initialized) {
+      throw new Error('Sheets service not initialized');
+    }
+
+    try {
+      console.log('Attempting to update email offer status in Google Sheets...');
+      const client = await this.auth.getClient();
+
+      // Find the row with matching sessionId
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetsId,
+        range: 'Sheet1!A:M',
+      });
+
+      const rows = response.data.values || [];
+      const rowIndex = rows.findIndex(row => row[1] === sessionId);
+
+      if (rowIndex === -1) {
+        console.error(`Session ID ${sessionId} not found in spreadsheet`);
+        return false;
+      }
+
+      // Update offer status and content
+      await this.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: this.sheetsId,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          data: [
+            {
+              range: `Sheet1!K${rowIndex + 1}:M${rowIndex + 1}`,
+              values: [[
+                'Offer Sent',                   // K: Email Status
+                new Date().toISOString(),       // L: Offer Sent Time
+                offerContent                    // M: Offer Content
+              ]]
+            }
+          ]
+        }
+      });
+
+      console.log('Successfully updated email offer status in sheets');
+      return true;
+    } catch (error) {
+      console.error('Error updating email offer status in sheets:', error);
       return false;
     }
   }

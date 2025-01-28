@@ -33,6 +33,18 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
     sheetsService.updateEmailSubmission(sessionId, email)
   ]);
 
+  // If personal offer was sent successfully, update sheets with the offer content
+  if (personalOffer.status === 'fulfilled' && personalOffer.value) {
+    try {
+      await sheetsService.updateEmailOfferStatus(
+        sessionId, 
+        personalOffer.value.content
+      );
+    } catch (error) {
+      console.error('Failed to update offer status in sheets:', error);
+    }
+  }
+
   // Log results
   console.log('\nDelivery Results:');
   console.log('Free Report:', freeReport.status === 'fulfilled' ? '✓ Sent' : `✗ Failed: ${freeReport.reason}`);
