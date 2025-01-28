@@ -67,14 +67,14 @@ class SheetsService {
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
-            nextRow - 1,                    // A: Row number
-            sessionId,                      // B: Session ID
-            new Date(timestamp).toISOString(), // C: Upload Time
-            imageUrl,                       // D: Image URL
-            'Pending Analysis',             // E: Analysis Status
-            '',                            // F: Analysis Time
-            'Pending Origin',               // G: Origin Status
-            ''                             // H: Origin Time
+            new Date().toISOString(),           // A: Timestamp
+            sessionId,                          // B: Session ID
+            new Date(timestamp).toISOString(),  // C: Upload Time
+            imageUrl,                           // D: Image URL
+            'Pending Analysis',                 // E: Analysis Status
+            '',                                // F: Analysis Time
+            'Pending Origin',                   // G: Origin Status
+            ''                                 // H: Origin Time
           ]]
         }
       });
