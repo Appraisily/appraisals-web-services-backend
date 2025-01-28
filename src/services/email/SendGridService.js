@@ -33,8 +33,8 @@ class SendGridService {
       },
       templateId: this.personalOfferTemplateId,
       dynamicTemplateData: {
-        subject: subject,
-        email_content: content
+        subject: this.escapeHtmlForSendGrid(subject),
+        email_content: this.escapeHtmlForSendGrid(content)
       }
     };
 
