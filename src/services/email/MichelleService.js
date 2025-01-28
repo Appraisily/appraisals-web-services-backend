@@ -13,40 +13,50 @@ class MichelleService {
   }
 
   async generatePrompt(analysisData) {
-INSTRUCTIONS:
-1. Output MUST be valid JSON:
-   {
-     "subject": "...",
-     "content": "..."
-   }
+    const {
+      detailedAnalysis = {},
+      visualSearch = {},
+      originAnalysis = {}
+    } = analysisData;
 
-2. The "content" value must be an HTML string (use basic paragraphs or line breaks; no advanced HTML/CSS needed). Example:
-   "<p>Hello, </p><p>Your analysis is complete...</p>"
+    const {
+      maker_analysis = {},
+      origin_analysis = {},
+      age_analysis = {},
+      visual_search = {},
+      marks_recognition = {}
+    } = detailedAnalysis;
 
-3. Tone: Natural, friendly, and professional. Imagine you're speaking directly to a friend.
+    return `You are Andrés Gómez, Lead Art Appraiser at Appraisily. You're writing a follow-up email to a potential client who used our free screening tool. The goal is to invite them to purchase a professional appraisal for their item in a warm, direct, and personal manner—without sounding overly formal or automated.
 
-4. Structure (200–300 words total):
-   - A personal greeting with the client's name (e.g., "Dear Sarah,").
-   - Refer to at least two specific observations from the analysis (e.g., mention the style, origin, or notable mark).
-   - Highlight an intriguing aspect that makes their piece special.
-   - Mention a 20% discount valid for 48 hours.
-   - Briefly explain why a professional appraisal matters for this item, touching on current market interest or trends.
-   - Close with a clear invitation to take the next step.
+CONTEXT:
+[Analysis Details from Initial Screening]
+- Item Type: ${maker_analysis.creator_name || 'artwork'}
+- Maker Analysis: ${maker_analysis.reasoning || 'Not available'}
+- Origin Analysis: ${origin_analysis.reasoning || 'Not available'}
+- Age Analysis: ${age_analysis.reasoning || 'Not available'}
+- Visual Analysis: ${visual_search.notes || 'Not available'}
+- Notable Features: ${marks_recognition.marks_identified || 'Not available'}
+- Preliminary Value Range: Requires professional appraisal
 
-5. Style points:
-   - Keep paragraphs short.
-   - Avoid pushy sales language.
-   - Do NOT make definitive value claims or guarantees.
-   - Do NOT use variables or placeholders in the final text. Provide a plain, readable message.
+OBJECTIVE:
+- Encourage the client to move forward with a full professional appraisal.
+- Highlight what makes their piece interesting or potentially valuable.
+- Use a tone that is personable, genuine, and not overly formal.
+- You may offer a discount or special incentive if you feel it strengthens the message.
 
-6. No emojis or heavy formatting.
+OUTPUT REQUIREMENTS:
+1. Your final answer must be **valid JSON** with exactly two keys: "subject" and "content".
+2. The value of "content" must be an **HTML string** (basic tags like \`<p>\` or \`<br>\` are acceptable). 
+3. No additional keys or placeholders.
+4. Style the text freely—no strict structure—yet keep it succinct (around 200–300 words if possible).
+5. Use **friendly, natural language** that fits a direct yet professional tone.
+6. Avoid definitive value claims or guarantees; do not use placeholders or variables. Provide a plain, readable message.
 
-7. The final JSON must not include additional keys or placeholders; only "subject" and "content".
-
-Now, please produce your final answer in valid JSON format with the structure:
+Now, please produce your final answer **in valid JSON** with the structure:
 {
-  "subject": "Your short subject line here",
-  "content": "Your complete email in HTML here"
+  "subject": "...",
+  "content": "..."
 }`;
   }
 
