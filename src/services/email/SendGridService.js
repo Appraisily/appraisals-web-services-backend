@@ -20,7 +20,7 @@ class SendGridService {
     this.initialized = true;
   }
 
-  async sendPersonalOffer(toEmail, subject, content) {
+  async sendPersonalOffer(toEmail, subject, content, scheduledTime = null) {
     if (!this.initialized) {
       throw new Error('SendGrid service not initialized');
     }
@@ -39,6 +39,11 @@ class SendGridService {
       }
     };
 
+    // Add send_at if scheduledTime is provided
+    if (scheduledTime) {
+      personalMsg.send_at = Math.floor(scheduledTime / 1000); // Convert to Unix timestamp
+    }
+
     await sgMail.send(personalMsg);
     return {
       success: true,
@@ -46,7 +51,8 @@ class SendGridService {
       subject,
       content,
       contentLength: content.length,
-      recipient: toEmail
+      recipient: toEmail,
+      scheduledTime
     };
   }
 

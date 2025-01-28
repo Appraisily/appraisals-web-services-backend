@@ -37,7 +37,7 @@ class SheetsService {
   async findRowBySessionId(sessionId) {
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.sheetsId,
-      range: 'Sheet1!A:P', // Extended range to include new columns
+      range: 'Sheet1!A:P',
     });
 
     const rows = response.data.values || [];
@@ -101,7 +101,6 @@ class SheetsService {
         return false;
       }
 
-      // Update email submission details
       await this.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: this.sheetsId,
         valueInputOption: 'USER_ENTERED',
@@ -110,8 +109,8 @@ class SheetsService {
             {
               range: `Sheet1!I${rowIndex + 1}:J${rowIndex + 1}`,
               values: [[
-                email,                          // I: Email
-                new Date().toISOString(),       // J: Email Submission Time
+                email,
+                new Date().toISOString()
               ]]
             }
           ]
@@ -148,8 +147,8 @@ class SheetsService {
             {
               range: `Sheet1!K${rowIndex + 1}:L${rowIndex + 1}`,
               values: [[
-                success ? 'Free Report Sent' : 'Free Report Failed',  // K: Free Report Status
-                new Date().toISOString(),                            // L: Free Report Time
+                success ? 'Free Report Sent' : 'Free Report Failed',
+                new Date().toISOString()
               ]]
             }
           ]
@@ -164,7 +163,7 @@ class SheetsService {
     }
   }
 
-  async updateOfferStatus(sessionId, success = true, offerContent = '') {
+  async updateOfferStatus(sessionId, success = true, offerContent = '', scheduledTime = null) {
     if (!this.initialized) {
       throw new Error('Sheets service not initialized');
     }
@@ -178,6 +177,9 @@ class SheetsService {
         return false;
       }
 
+      const status = scheduledTime ? 'Offer Scheduled' : (success ? 'Offer Sent' : 'Offer Failed');
+      const timestamp = scheduledTime ? new Date(scheduledTime).toISOString() : new Date().toISOString();
+
       await this.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: this.sheetsId,
         valueInputOption: 'USER_ENTERED',
@@ -186,10 +188,10 @@ class SheetsService {
             {
               range: `Sheet1!M${rowIndex + 1}:P${rowIndex + 1}`,
               values: [[
-                success ? 'Offer Sent' : 'Offer Failed',  // M: Offer Status
-                new Date().toISOString(),                 // N: Offer Time
-                success ? 'Yes' : 'No',                   // O: Offer Delivered
-                offerContent                              // P: Offer Content
+                status,
+                timestamp,
+                success ? 'Pending' : 'No',
+                offerContent
               ]]
             }
           ]

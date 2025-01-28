@@ -20,35 +20,39 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
   );
   console.log('✓ Report generated successfully');
 
-  // Send emails and update sheets in parallel
-  console.log('\nSending emails and updating sheets...');
-  const [freeReport, personalOffer] = await Promise.allSettled([
-    emailService.sendFreeReport(email, reportHtml),
-    emailService.sendPersonalOffer(email, {
-      sessionId,
-      detailedAnalysis,
-      visualSearch,
-      originAnalysis
-    })
-  ]);
+  // Send free report immediately
+  console.log('\nSending free report...');
+  const freeReport = await emailService.sendFreeReport(email, reportHtml);
+  
+  // Schedule personal offer for 1 hour later
+  console.log('\nScheduling personal offer...');
+  const scheduledTime = Date.now() + (60 * 60 * 1000); // 1 hour from now
+  
+  const personalOffer = await emailService.sendPersonalOffer(email, {
+    sessionId,
+    detailedAnalysis,
+    visualSearch,
+    originAnalysis
+  }, scheduledTime);
 
   // Update free report status
   try {
     await sheetsService.updateFreeReportStatus(
       sessionId,
-      freeReport.status === 'fulfilled'
+      freeReport === true
     );
   } catch (error) {
     console.error('Failed to update free report status in sheets:', error);
   }
 
-  // Update offer status if personal offer was attempted
-  if (personalOffer.status === 'fulfilled' && personalOffer.value) {
+  // Update offer status if personal offer was scheduled
+  if (personalOffer?.success) {
     try {
       await sheetsService.updateOfferStatus(
         sessionId,
         true,
-        personalOffer.value.content || 'No content available'
+        personalOffer.content || 'No content available',
+        scheduledTime
       );
     } catch (error) {
       console.error('Failed to update offer status in sheets:', error);
@@ -58,7 +62,7 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
       await sheetsService.updateOfferStatus(
         sessionId,
         false,
-        'Failed to send offer'
+        'Failed to schedule offer'
       );
     } catch (error) {
       console.error('Failed to update failed offer status in sheets:', error);
@@ -67,14 +71,10 @@ async function sendEmails(email, analysisResults, metadata, sessionId) {
 
   // Log results
   console.log('\nDelivery Results:');
-  console.log('Free Report:', freeReport.status === 'fulfilled' ? '✓ Sent' : `✗ Failed: ${freeReport.reason}`);
-  console.log('Personal Offer:', personalOffer.status === 'fulfilled' ? '✓ Sent' : `✗ Failed: ${personalOffer.reason}`);
-
-  // Check for any failures
-  const failures = [freeReport, personalOffer].filter(result => result.status === 'rejected');
-  if (failures.length > 0) {
-    console.error('\n✗ Some operations failed:', failures.map(f => f.reason));
-  }
+  console.log('Free Report:', freeReport ? '✓ Sent' : '✗ Failed');
+  console.log('Personal Offer:', personalOffer?.success ? 
+    `✓ Scheduled for ${new Date(scheduledTime).toISOString()}` : 
+    '✗ Failed to schedule');
 
   console.log('=== Email Delivery Process Complete ===\n');
 }
