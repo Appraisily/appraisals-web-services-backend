@@ -43,6 +43,7 @@ class SendGridService {
       success: true,
       timestamp: Date.now(),
       subject,
+      content,
       contentLength: content.length,
       recipient: toEmail
     };

@@ -4,6 +4,7 @@ const validator = require('validator');
 const { validateAndProcessEmail } = require('../services/email/validation');
 const { processAnalysis } = require('../services/email/analysis');
 const { sendEmails } = require('../services/email/delivery');
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -38,6 +39,11 @@ router.post('/submit-email', limiter, async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     console.log('✓ Validation successful');
     console.log('Session metadata updated with email hash');
+
+    // Immediately log email to sheets (don't await)
+    sheetsService.updateEmailSubmission(sessionId, email)
+      .then(() => console.log('✓ Email logged to sheets'))
+      .catch(error => console.error('✗ Failed to log email to sheets:', error));
 
     // Send immediate success response to client
     console.log('Sending success response to client');

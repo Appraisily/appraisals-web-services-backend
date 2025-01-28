@@ -52,7 +52,7 @@ OUTPUT REQUIREMENTS:
 4. Style the text freely—no strict structure—yet keep it succinct (around 200–300 words if possible).
 5. Use **friendly, natural language** that fits a direct yet professional tone.
 6. Avoid definitive value claims or guarantees; do not use placeholders or variables. Provide a plain, readable message.
-7. There is a button that redirects to the checkout with the disscount just after the text you are generating.
+7. There is a button that redirects to the checkout with the disscount just after the text you are generating. Do not include any button or link in your generated text. It will be part of a template that includes CTAs and buttons, I just need the text.
 
 Now, please produce your final answer **in valid JSON** with the structure:
 {
