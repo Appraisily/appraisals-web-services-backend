@@ -48,23 +48,40 @@ router.post('/submit-email', limiter, async (req, res) => {
       submissionTime: metadata.email.submissionTime
     });
 
-    try {
-      // Process analysis in background
-      console.log('\n=== Starting Background Processing ===');
-      console.log('Processing analysis for session:', sessionId);
-      const analysisResults = await processAnalysis(sessionId, baseUrl);
-      console.log('✓ Analysis processing complete');
-      
-      // Send emails and update sheets
-      console.log('\n=== Starting Email Delivery ===');
-      await sendEmails(email, analysisResults, metadata, sessionId);
-      console.log('✓ Email delivery complete');
-      console.log('=== Email Submission Process Complete ===\n');
-    } catch (error) {
-      console.error('\n✗ Background processing error:', error);
-      console.error('Stack trace:', error.stack);
-      console.log('=== Email Submission Process Failed ===\n');
-    }
+    // Process analysis and send emails in background
+    (async () => {
+      try {
+        // Process analysis in background
+        console.log('\n=== Starting Background Processing ===');
+        console.log('Processing analysis for session:', sessionId);
+        const analysisResults = await processAnalysis(sessionId, baseUrl);
+        console.log('✓ Analysis processing complete');
+        
+        // Send emails and update sheets
+        console.log('\n=== Starting Email Delivery ===');
+        await sendEmails(email, analysisResults, metadata, sessionId);
+        console.log('✓ Email delivery complete');
+        console.log('=== Email Submission Process Complete ===\n');
+      } catch (error) {
+        // Log error but don't stop the process
+        console.error('\n✗ Background processing error:', error);
+        console.error('Stack trace:', error.stack);
+        
+        // Try to send emails anyway with whatever analysis results we have
+        try {
+          console.log('\n=== Attempting Email Delivery Despite Errors ===');
+          await sendEmails(email, { analysis: null, origin: null, detailed: null }, metadata, sessionId);
+          console.log('✓ Email delivery completed with limited analysis');
+        } catch (emailError) {
+          console.error('✗ Final email delivery attempt failed:', emailError);
+        }
+        
+        console.log('=== Email Submission Process Complete with Errors ===\n');
+      }
+    })().catch(error => {
+      console.error('Unhandled error in background processing:', error);
+    });
+
   } catch (error) {
     console.error('\n✗ Email submission error:', error);
     console.error('Stack trace:', error.stack);

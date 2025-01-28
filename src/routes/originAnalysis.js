@@ -57,44 +57,23 @@ router.post('/origin-analysis', async (req, res) => {
     console.log('---------------');
     console.log('User Image:', metadata.imageUrl);
     console.log('\nSimilar Images:');
-    (analysis.vision.matches.similar || []).forEach((img, index) => {
+    (analysis.vision?.matches?.similar || []).forEach((img, index) => {
       console.log(`${index + 1}. ${img.url} (score: ${img.score || 'N/A'})`);
     });
     console.log('---------------\n');
 
     // Extract similar images from the analysis
-    const allSimilarImages = analysis.vision.matches.similar || [];
+    const allSimilarImages = analysis.vision?.matches?.similar || [];
     
     // Filter and validate similar image URLs before sending to OpenAI
     // Take only the first 5 images to optimize processing time
     const topSimilarImages = allSimilarImages.slice(0, 5);
     const validSimilarImages = await filterValidImageUrls(topSimilarImages);
 
-    // Create the prompt for origin analysis
-    const originPrompt = `You are an expert art appraiser with access to computer vision technology. 
-Your task is to analyze the first image (user's artwork) and compare it with the following similar images found through visual search.
-
-Analyze:
-1. The artistic style and technique
-2. Any unique characteristics or patterns
-3. Compare with similar images to determine if this is likely an original artwork or a reproduction
-
-Provide your analysis in JSON format:
-{
-  "originality": "original" or "reproduction",
-  "confidence": number between 0 and 1,
-  "style_analysis": "Brief description of artistic style",
-  "unique_characteristics": ["List of unique features"],
-  "comparison_notes": "Brief notes on similarities/differences with reference images",
-  "recommendation": "Your professional recommendation"
-}`;
-
     // Call OpenAI with the user's image and similar images
     const originAnalysis = await openai.analyzeOrigin(
       metadata.imageUrl,
-      validSimilarImages,
-      originPrompt,
-      'ORIGIN' // Explicitly specify the model type
+      validSimilarImages
     );
 
     // Log available variables
@@ -111,13 +90,13 @@ Provide your analysis in JSON format:
     });
     console.log('Analysis:', {
       timestamp: analysis.timestamp,
-      webEntities: analysis.vision.webEntities.length,
+      webEntities: analysis.vision?.webEntities?.length,
       matches: {
-        exact: analysis.vision.matches.exact.length,
-        partial: analysis.vision.matches.partial.length,
-        similar: analysis.vision.matches.similar.length
+        exact: analysis.vision?.matches?.exact?.length || 0,
+        partial: analysis.vision?.matches?.partial?.length || 0,
+        similar: analysis.vision?.matches?.similar?.length || 0
       },
-      labels: analysis.vision.description.labels,
+      labels: analysis.vision?.description?.labels,
       openai: analysis.openai
     });
 
@@ -155,8 +134,7 @@ Provide your analysis in JSON format:
       openai: {
         category = '',
         description: openaiDescription = ''
-      } = {},
-      metadata: imageMetadata = {}
+      } = {}
     } = analysis;
 
     // Organize matches by type
@@ -198,20 +176,6 @@ Provide your analysis in JSON format:
         cacheControl: 'no-cache'
       }
     });
-
-    // Log origin analysis results to sheets
-    try {
-      await sheetsService.updateOriginAnalysisResults(
-        sessionId,
-        originResults
-      ).catch(error => {
-        // Log error but don't fail the request
-        console.error('Failed to log origin analysis results to sheets:', error);
-      });
-    } catch (error) {
-      console.error('Error logging to sheets:', error);
-      // Don't fail the request if sheets logging fails
-    }
 
     // Verify the file was saved
     const [exists] = await originFile.exists();

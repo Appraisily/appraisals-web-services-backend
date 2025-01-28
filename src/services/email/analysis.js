@@ -41,40 +41,61 @@ async function processAnalysis(sessionId, baseUrl) {
   const performAnalysis = async (endpoint, file, exists) => {
     if (exists[0]) {
       console.log(`Loading existing ${endpoint} analysis...`);
-      const [content] = await file.download();
-      return JSON.parse(content.toString());
+      try {
+        const [content] = await file.download();
+        return JSON.parse(content.toString());
+      } catch (error) {
+        console.error(`Error loading existing ${endpoint} analysis:`, error);
+        return null;
+      }
     }
 
     console.log(`Performing new ${endpoint} analysis...`);
-    const response = await fetch(`${baseUrl}/${endpoint}`, {
-      timeout: 30000, // 30 second timeout
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId })
-    });
+    try {
+      const response = await fetch(`${baseUrl}/${endpoint}`, {
+        timeout: 30000, // 30 second timeout
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to perform ${endpoint} analysis`);
+      if (!response.ok) {
+        console.error(`${endpoint} analysis failed with status ${response.status}`);
+        return null;
+      }
+
+      const result = await response.json();
+      const content = endpoint === 'full-analysis' ? result.results.detailedAnalysis : result.results;
+
+      try {
+        console.log(`Saving ${endpoint} analysis results...`);
+        await file.save(JSON.stringify(content, null, 2), {
+          contentType: 'application/json',
+          metadata: { cacheControl: 'no-cache' }
+        });
+      } catch (saveError) {
+        console.error(`Error saving ${endpoint} analysis:`, saveError);
+        // Continue with the content even if saving fails
+      }
+
+      return content;
+    } catch (error) {
+      console.error(`Error performing ${endpoint} analysis:`, error);
+      return null;
     }
-
-    const result = await response.json();
-    const content = endpoint === 'full-analysis' ? result.results.detailedAnalysis : result.results;
-
-    console.log(`Saving ${endpoint} analysis results...`);
-    await file.save(JSON.stringify(content, null, 2), {
-      contentType: 'application/json',
-      metadata: { cacheControl: 'no-cache' }
-    });
-
-    return content;
   };
 
-  // Perform analyses in parallel
-  [results.analysis, results.origin, results.detailed] = await Promise.all([
+  // Perform analyses in parallel and handle failures gracefully
+  const analysisPromises = await Promise.allSettled([
     performAnalysis('visual-search', files.analysis, analysisExists),
     performAnalysis('origin-analysis', files.origin, originExists),
     performAnalysis('full-analysis', files.detailed, detailedExists)
   ]);
+
+  // Process results, keeping null for failed analyses
+  results.analysis = analysisPromises[0].status === 'fulfilled' ? analysisPromises[0].value : null;
+  results.origin = analysisPromises[1].status === 'fulfilled' ? analysisPromises[1].value : null;
+  results.detailed = analysisPromises[2].status === 'fulfilled' ? analysisPromises[2].value : null;
 
   console.log('\nAnalysis processing complete:', {
     visualSearch: results.analysis ? '✓' : '✗',

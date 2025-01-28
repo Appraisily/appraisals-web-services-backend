@@ -31,8 +31,11 @@ class SendGridService {
         email: this.fromEmail,
         name: 'Andrés - Art Expert'
       },
-      subject,
-      html: content
+      templateId: this.personalOfferTemplateId,
+      dynamicTemplateData: {
+        subject: subject,
+        email_content: content
+      }
     };
 
     await sgMail.send(personalMsg);
