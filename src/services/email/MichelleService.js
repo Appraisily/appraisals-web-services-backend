@@ -5,6 +5,8 @@ class MichelleService {
     this.apiUrl = 'https://michelle-gmail-856401495068.us-central1.run.app/api/process-message';
     this.apiKey = null;
     this.fromEmail = null;
+    this.maxRetries = 3;
+    this.retryDelay = 1000; // 1 second
   }
 
   initialize(apiKey, fromEmail) {
@@ -52,13 +54,36 @@ OUTPUT REQUIREMENTS:
 4. Style the text freely—no strict structure—yet keep it succinct (around 200–300 words if possible).
 5. Use **friendly, natural language** that fits a direct yet professional tone.
 6. Avoid definitive value claims or guarantees; do not use placeholders or variables. Provide a plain, readable message.
-7. There is a button that redirects to the checkout with the disscount just after the text you are generating. Do not include any button or link in your generated text. It will be part of a template that includes CTAs and buttons, I just need the text.
 
 Now, please produce your final answer **in valid JSON** with the structure:
 {
   "subject": "...",
   "content": "..."
 }`;
+  }
+
+  async sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async fetchWithRetry(url, options, retryCount = 0) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    } catch (error) {
+      if (retryCount >= this.maxRetries) {
+        console.error(`Failed after ${this.maxRetries} retries:`, error);
+        throw error;
+      }
+
+      const delay = this.retryDelay * Math.pow(2, retryCount); // Exponential backoff
+      console.log(`Retry ${retryCount + 1}/${this.maxRetries} after ${delay}ms...`);
+      await this.sleep(delay);
+      return this.fetchWithRetry(url, options, retryCount + 1);
+    }
   }
 
   async generateContent(analysisData) {
@@ -88,7 +113,7 @@ Now, please produce your final answer **in valid JSON** with the structure:
     };
 
     console.log('Sending request to Michelle API...');
-    const response = await fetch(this.apiUrl, {
+    const response = await this.fetchWithRetry(this.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,11 +121,6 @@ Now, please produce your final answer **in valid JSON** with the structure:
       },
       body: JSON.stringify(requestBody)
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Michelle API error (${response.status}): ${errorText}`);
-    }
 
     const data = await response.json();
     if (!data.success || !data.response || !data.response.text) {
