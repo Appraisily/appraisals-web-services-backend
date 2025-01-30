@@ -1,6 +1,53 @@
 const cloudServices = require('../storage');
 const fetch = require('node-fetch');
 
+// Increased timeout to 60 seconds for long-running analyses
+const FETCH_TIMEOUT = 60000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 5000;
+
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function performAnalysisWithRetry(endpoint, sessionId, baseUrl, retryCount = 0) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const response = await fetch(`${baseUrl}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`${endpoint} failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+    return endpoint === 'full-analysis' ? result.results.detailedAnalysis : result.results;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`Timeout exceeded for ${endpoint} (${FETCH_TIMEOUT}ms)`);
+    } else {
+      console.error(`Error in ${endpoint}:`, error);
+    }
+
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying ${endpoint} (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+      await sleep(RETRY_DELAY);
+      return performAnalysisWithRetry(endpoint, sessionId, baseUrl, retryCount + 1);
+    }
+
+    console.error(`${endpoint} failed after ${MAX_RETRIES} retries`);
+    return null;
+  }
+}
+
 async function processAnalysis(sessionId, baseUrl) {
   console.log('\n=== Starting Analysis Processing ===');
   console.log('Session ID:', sessionId);
@@ -28,74 +75,47 @@ async function processAnalysis(sessionId, baseUrl) {
     detailed: detailedExists[0] ? 'exists' : 'missing'
   });
 
-  console.log('\nProcessing required analyses...');
-
-  // Load or perform analyses
   const results = {
     analysis: null,
     origin: null,
     detailed: null
   };
 
-  // Helper function to perform analysis
-  const performAnalysis = async (endpoint, file, exists) => {
-    if (exists[0]) {
-      console.log(`Loading existing ${endpoint} analysis...`);
-      try {
-        const [content] = await file.download();
-        return JSON.parse(content.toString());
-      } catch (error) {
-        console.error(`Error loading existing ${endpoint} analysis:`, error);
-        return null;
-      }
-    }
-
-    console.log(`Performing new ${endpoint} analysis...`);
+  // Helper function to load existing analysis
+  const loadExistingAnalysis = async (file, type) => {
     try {
-      const response = await fetch(`${baseUrl}/${endpoint}`, {
-        timeout: 30000, // 30 second timeout
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
-
-      if (!response.ok) {
-        console.error(`${endpoint} analysis failed with status ${response.status}`);
-        return null;
-      }
-
-      const result = await response.json();
-      const content = endpoint === 'full-analysis' ? result.results.detailedAnalysis : result.results;
-
-      try {
-        console.log(`Saving ${endpoint} analysis results...`);
-        await file.save(JSON.stringify(content, null, 2), {
-          contentType: 'application/json',
-          metadata: { cacheControl: 'no-cache' }
-        });
-      } catch (saveError) {
-        console.error(`Error saving ${endpoint} analysis:`, saveError);
-        // Continue with the content even if saving fails
-      }
-
-      return content;
+      console.log(`Loading existing ${type} analysis...`);
+      const [content] = await file.download();
+      return JSON.parse(content.toString());
     } catch (error) {
-      console.error(`Error performing ${endpoint} analysis:`, error);
+      console.error(`Error loading existing ${type} analysis:`, error);
       return null;
     }
   };
 
-  // Perform analyses in parallel and handle failures gracefully
-  const analysisPromises = await Promise.allSettled([
-    performAnalysis('visual-search', files.analysis, analysisExists),
-    performAnalysis('origin-analysis', files.origin, originExists),
-    performAnalysis('full-analysis', files.detailed, detailedExists)
-  ]);
+  // Process visual search first if needed
+  if (!analysisExists[0]) {
+    console.log('\nPerforming visual search analysis...');
+    results.analysis = await performAnalysisWithRetry('visual-search', sessionId, baseUrl);
+  } else {
+    results.analysis = await loadExistingAnalysis(files.analysis, 'visual search');
+  }
 
-  // Process results, keeping null for failed analyses
-  results.analysis = analysisPromises[0].status === 'fulfilled' ? analysisPromises[0].value : null;
-  results.origin = analysisPromises[1].status === 'fulfilled' ? analysisPromises[1].value : null;
-  results.detailed = analysisPromises[2].status === 'fulfilled' ? analysisPromises[2].value : null;
+  // Only proceed with origin and detailed analysis if visual search succeeded
+  if (results.analysis) {
+    // Process origin and detailed analysis in parallel
+    const [originResult, detailedResult] = await Promise.all([
+      !originExists[0] ? 
+        performAnalysisWithRetry('origin-analysis', sessionId, baseUrl) : 
+        loadExistingAnalysis(files.origin, 'origin'),
+      !detailedExists[0] ? 
+        performAnalysisWithRetry('full-analysis', sessionId, baseUrl) : 
+        loadExistingAnalysis(files.detailed, 'detailed')
+    ]);
+
+    results.origin = originResult;
+    results.detailed = detailedResult;
+  }
 
   console.log('\nAnalysis processing complete:', {
     visualSearch: results.analysis ? '✓' : '✗',
