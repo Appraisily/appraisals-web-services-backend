@@ -40,12 +40,14 @@ CONTEXT:
 - Visual Analysis: ${visual_search.notes || 'Not available'}
 - Notable Features: ${marks_recognition.marks_identified || 'Not available'}
 - Preliminary Value Range: Requires professional appraisal
+- Special Offer: 20% discount on our base appraisal fee
 
 OBJECTIVE:
 - Encourage the client to move forward with a full professional appraisal.
 - Highlight what makes their piece interesting or potentially valuable.
 - Use a tone that is personable, genuine, and not overly formal.
-- You may offer a discount or special incentive if you feel it strengthens the message.
+- Emphasize the limited-time 20% discount on our base appraisal fee.
+- Create a sense of urgency by mentioning the discount is only available for 48 hours.
 
 OUTPUT REQUIREMENTS:
 1. Your final answer must be **valid JSON** with exactly two keys: "subject" and "content".
@@ -54,6 +56,7 @@ OUTPUT REQUIREMENTS:
 4. Style the text freely—no strict structure—yet keep it succinct (around 200–300 words if possible).
 5. Use **friendly, natural language** that fits a direct yet professional tone.
 6. Avoid definitive value claims or guarantees; do not use placeholders or variables. Provide a plain, readable message.
+7. IMPORTANT: Make sure to mention the 20% discount naturally in the content, emphasizing it's a limited-time offer.
 
 Now, please produce your final answer **in valid JSON** with the structure:
 {
@@ -68,21 +71,27 @@ Now, please produce your final answer **in valid JSON** with the structure:
 
   async fetchWithRetry(url, options, retryCount = 0) {
     try {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        signal: controller.signal 
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) return false;
+      
+      const contentType = response.headers.get('content-type');
+      return contentType && contentType.startsWith('image/');
     } catch (error) {
-      if (retryCount >= this.maxRetries) {
-        console.error(`Failed after ${this.maxRetries} retries:`, error);
-        throw error;
+      if (error.name === 'AbortError') {
+        console.warn(`Timeout validating URL: ${url} (exceeded ${TIMEOUT_MS}ms)`);
+      } else {
+        console.warn(`Failed to validate URL: ${url}`, error.message);
       }
-
-      const delay = this.retryDelay * Math.pow(2, retryCount); // Exponential backoff
-      console.log(`Retry ${retryCount + 1}/${this.maxRetries} after ${delay}ms...`);
-      await this.sleep(delay);
-      return this.fetchWithRetry(url, options, retryCount + 1);
+      return false;
     }
   }
 
