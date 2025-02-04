@@ -1,7 +1,6 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
-const pubsubService = require('../services/pubsub'); 
 const sheetsService = require('../services/sheets');
 
 const router = express.Router();
@@ -70,17 +69,6 @@ router.post('/full-analysis', async (req, res) => {
         console.error('Failed to log detailed analysis to sheets:', error);
         // Don't fail the request if sheets logging fails
       }
-
-      // Publish analysis complete event
-      await pubsubService.publishToCRM({
-        crmProcess: "analysisComplete",
-        sessionId,
-        timestamp: Date.now(),
-        metadata: {
-          analysisType: "detailed",
-          results: detailedAnalysis
-        }
-      });
     }
 
     // Return results

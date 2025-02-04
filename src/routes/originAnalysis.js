@@ -3,7 +3,6 @@ const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
 const { filterValidImageUrls } = require('../utils/urlValidator');
 const originFormatter = require('../services/originFormatter');
-const pubsubService = require('../services/pubsub');
 const sheetsService = require('../services/sheets');
 const fetch = require('node-fetch');
 

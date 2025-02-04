@@ -2,7 +2,6 @@ const express = require('express');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
-const pubsubService = require('../services/pubsub');
 const sheetsService = require('../services/sheets');
 
 const router = express.Router();
@@ -118,17 +117,6 @@ router.post('/visual-search', async (req, res) => {
       vision: formattedResults,
       openai: openaiAnalysis
     };
-
-    // Publish analysis complete event
-    await pubsubService.publishToCRM({
-      crmProcess: "analysisComplete",
-      sessionId,
-      timestamp: Date.now(),
-      metadata: {
-        analysisType: "visual",
-        results: analysisResults
-      }
-    });
 
     const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
     const analysisString = JSON.stringify(analysisResults, null, 2);
