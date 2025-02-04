@@ -4,15 +4,17 @@ class PubSubService {
   constructor() {
     this.pubsub = null;
     this.projectId = null;
+    this.topicName = null;
     this.initialized = false;
   }
 
-  initialize(projectId) {
+  initialize(projectId, topicName = 'CRM-tasks') {
     if (!projectId) {
       throw new Error('Project ID is required for PubSub initialization');
     }
 
     this.projectId = projectId;
+    this.topicName = topicName;
     this.pubsub = new PubSub({ projectId });
     this.initialized = true;
   }
@@ -23,15 +25,15 @@ class PubSubService {
     }
 
     try {
-      const topic = this.pubsub.topic('CRM-tasks');
+      const topic = this.pubsub.topic(this.topicName);
       const messageBuffer = Buffer.from(JSON.stringify(data));
       
       const messageId = await topic.publish(messageBuffer);
-      console.log(`Message ${messageId} published to CRM-tasks`);
+      console.log(`Message ${messageId} published to ${this.topicName}`);
       
       return messageId;
     } catch (error) {
-      console.error('Error publishing to CRM-tasks:', error);
+      console.error(`Error publishing to ${this.topicName}:`, error);
       throw error;
     }
   }

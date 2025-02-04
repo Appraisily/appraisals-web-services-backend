@@ -3,6 +3,7 @@ const mime = require('mime-types');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
 const pubsubService = require('../services/pubsub');
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -118,20 +119,16 @@ router.post('/visual-search', async (req, res) => {
       openai: openaiAnalysis
     };
 
-    // Log analysis results to sheets
-    try {
-      await sheetsService.updateVisualSearchResults(
-        sessionId,
-        analysisResults,
-        openaiAnalysis.category
-      ).catch(error => {
-        // Log error but don't fail the request
-        console.error('Failed to log visual search results to sheets:', error);
-      });
-    } catch (error) {
-      console.error('Error logging to sheets:', error);
-      // Don't fail the request if sheets logging fails
-    }
+    // Publish analysis complete event
+    await pubsubService.publishToCRM({
+      crmProcess: "analysisComplete",
+      sessionId,
+      timestamp: Date.now(),
+      metadata: {
+        analysisType: "visual",
+        results: analysisResults
+      }
+    });
 
     const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
     const analysisString = JSON.stringify(analysisResults, null, 2);
@@ -141,6 +138,19 @@ router.post('/visual-search', async (req, res) => {
         cacheControl: 'no-cache'
       }
     });
+
+    // Log analysis to sheets
+    try {
+      await sheetsService.updateAnalysisStatus(
+        sessionId,
+        'visual',
+        analysisResults
+      );
+      console.log('✓ Analysis logged to sheets');
+    } catch (error) {
+      console.error('Failed to log analysis to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     // Verify the file was saved
     const [exists] = await analysisFile.exists();

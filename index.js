@@ -2,6 +2,7 @@ const express = require('express');
 const { loadSecrets } = require('./src/config/secrets');
 const cloudServices = require('./src/services/storage');
 const pubsubService = require('./src/services/pubsub');
+const sheetsService = require('./src/services/sheets');
 const corsMiddleware = require('./src/middleware/cors');
 const uploadRouter = require('./src/routes/upload');
 const visualSearchRouter = require('./src/routes/visualSearch');
@@ -36,6 +37,9 @@ const init = async () => {
       secrets.GCS_BUCKET_NAME,
       secrets.OPENAI_API_KEY
     );
+
+    // Initialize sheets service
+    sheetsService.initialize(keyFilePath, secrets.SHEETS_ID_FREE_REPORTS_LOG);
 
     // Initialize Pub/Sub service
     pubsubService.initialize(

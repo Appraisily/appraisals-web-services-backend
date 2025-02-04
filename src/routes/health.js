@@ -1,4 +1,5 @@
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const cloudServices = require('../services/storage');
 const pubsubService = require('../services/pubsub');
 const pkg = require('../../package.json');
@@ -145,15 +146,12 @@ router.get('/status', async (req, res) => {
     // Check Vision API
     const visionClient = cloudServices.getVisionClient();
     const visionHealthy = !!visionClient;
-
-    // Check Email Service
-    const emailHealthy = emailService.initialized;
-
-    // Check Sheets Service
-    const sheetsHealthy = sheetsService.initialized;
+    
+    // Check Pub/Sub
+    const pubsubHealthy = pubsubService.initialized;
 
     // Determine overall status
-    const allServicesHealthy = storageHealthy && visionHealthy && emailHealthy && sheetsHealthy;
+    const allServicesHealthy = storageHealthy && visionHealthy && pubsubHealthy;
     const status = allServicesHealthy ? 'healthy' : 'degraded';
 
     const timestamp = new Date().toISOString();
@@ -164,8 +162,8 @@ router.get('/status', async (req, res) => {
       timestamp,
       services: {
         storage: storageHealthy,
-        email: emailHealthy,
-        sheets: sheetsHealthy
+        vision: visionHealthy,
+        pubsub: pubsubHealthy
       }
     });
   } catch (error) {

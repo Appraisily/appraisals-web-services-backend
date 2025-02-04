@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
 const pubsubService = require('../services/pubsub');
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -103,6 +104,19 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     console.log(`- ${sessionFolder}/`);
     console.log(`  ├── ${imageFileName}`);
     console.log(`  └── metadata.json`);
+
+    // Log upload to sheets
+    try {
+      await sheetsService.logUpload(
+        sessionId,
+        sessionMetadata.timestamp,
+        imageUrl
+      );
+      console.log('✓ Upload logged to sheets');
+    } catch (error) {
+      console.error('Failed to log upload to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     // Publish upload event
     await pubsubService.publishMessage('upload-complete', {

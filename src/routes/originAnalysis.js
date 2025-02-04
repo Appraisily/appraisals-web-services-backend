@@ -4,6 +4,7 @@ const openai = require('../services/openai');
 const { filterValidImageUrls } = require('../utils/urlValidator');
 const originFormatter = require('../services/originFormatter');
 const pubsubService = require('../services/pubsub');
+const sheetsService = require('../services/sheets');
 const fetch = require('node-fetch');
 
 const router = express.Router();
@@ -283,6 +284,19 @@ router.post('/origin-analysis', async (req, res) => {
       }
     });
     console.log('✓ Session metadata updated');
+
+    // Log origin analysis to sheets
+    try {
+      await sheetsService.updateAnalysisStatus(
+        sessionId,
+        'origin',
+        originResults
+      );
+      console.log('✓ Origin analysis logged to sheets');
+    } catch (error) {
+      console.error('Failed to log origin analysis to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     console.log(`\n✓ Origin analysis completed for session ${sessionId}`);
     console.log('=== Origin Analysis Complete ===\n');
