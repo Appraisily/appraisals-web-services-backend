@@ -3,7 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
-const sheetsService = require('../services/sheets');
+const pubsubService = require('../services/pubsub');
 
 const router = express.Router();
 
@@ -94,21 +94,6 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     }
     console.log(`Session metadata saved for session ID: ${sessionId}`);
 
-    // Log upload to Google Sheets
-    try {
-      await sheetsService.logUpload(
-        sessionId,
-        sessionMetadata.timestamp,
-        imageUrl
-      ).catch(error => {
-        // Log error but don't fail the request
-        console.error('Failed to log upload to sheets:', error);
-      });
-    } catch (error) {
-      console.error('Error logging to sheets:', error);
-      // Don't fail the request if sheets logging fails
-    }
-
     // Verify complete session structure
     const sessionFiles = await bucket.getFiles({
       prefix: sessionFolder
@@ -118,6 +103,14 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     console.log(`- ${sessionFolder}/`);
     console.log(`  ├── ${imageFileName}`);
     console.log(`  └── metadata.json`);
+
+    // Publish upload event
+    await pubsubService.publishMessage('upload-complete', {
+      sessionId,
+      timestamp: sessionMetadata.timestamp,
+      imageUrl
+    });
+
     res.json({
       success: true,
       message: 'Image uploaded successfully.',

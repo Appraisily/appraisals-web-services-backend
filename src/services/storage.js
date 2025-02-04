@@ -1,5 +1,5 @@
 const { Storage } = require('@google-cloud/storage');
-const vision = require('@google-cloud/vision');
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const openai = require('./openai');
 
 class CloudServices {
@@ -31,7 +31,7 @@ class CloudServices {
 
       // Initialize Vision client
       console.log('Initializing Google Vision client...');
-      this.visionClient = new vision.ImageAnnotatorClient({
+      this.visionClient = new ImageAnnotatorClient({
         projectId,
         keyFilename: keyFilePath,
       });

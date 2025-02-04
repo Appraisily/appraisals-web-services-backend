@@ -1,6 +1,16 @@
-# Art Appraisal Web Services Backend
+# Art Analysis Backend Service
 
-A robust Node.js backend service for art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and professional reporting capabilities.
+A specialized Node.js backend service focused on art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and visual search capabilities.
+
+## Overview
+
+This service is part of a microservices architecture, specifically handling:
+- Image upload and storage
+- Visual similarity analysis
+- Origin determination
+- Detailed artwork analysis
+
+The service communicates with other components through Google Cloud Pub/Sub for asynchronous operations like email notifications and user communications.
 
 ## Repository Structure
 
@@ -18,7 +28,6 @@ A robust Node.js backend service for art and antique image analysis using Google
     ├── middleware/
     │   └── cors.js          # CORS configuration
     ├── routes/
-    │   ├── email.js         # Email submission handling
     │   ├── fullAnalysis.js  # Complete artwork analysis
     │   ├── health.js        # Health check endpoints
     │   ├── originAnalysis.js # Origin determination
@@ -26,36 +35,14 @@ A robust Node.js backend service for art and antique image analysis using Google
     │   ├── upload.js        # File upload handling
     │   └── visualSearch.js  # Visual search processing
     ├── services/
-    │   ├── email/
-    │   │   ├── AnalysisService.js  # Analysis processing
-    │   │   ├── MichelleService.js  # Personal offer generation
-    │   │   ├── SendGridService.js  # Email delivery
-    │   │   ├── analysis.js         # Analysis orchestration
-    │   │   ├── delivery.js         # Email delivery orchestration
-    │   │   ├── index.js            # Main email service
-    │   │   └── validation.js       # Email validation
-    │   ├── encryption.js     # AES encryption utilities
-    │   ├── openai.js         # OpenAI integration
-    │   ├── originFormatter.js # Analysis formatting
-    │   ├── reportComposer.js # Email report generation
-    │   ├── sheets.js         # Google Sheets integration
-    │   └── storage.js        # Cloud storage management
-    ├── templates/
-    │   ├── emails.js         # Free report email template
-    │   └── personalOffer.html # Personal offer template
+    │   ├── openai.js        # OpenAI integration
+    │   ├── pubsub.js        # Pub/Sub message publishing
+    │   ├── storage.js       # Cloud storage management
+    │   └── vision.js        # Google Vision integration
     └── utils/
-        ├── dateFormatter.js   # Date formatting utilities
-        └── urlValidator.js    # URL validation utilities
+        ├── validators.js    # Input validation utilities
+        └── formatters.js    # Response formatting utilities
 ```
-
-## Status
-
-✅ **Production Ready**
-- All core features implemented and tested
-- Email reporting system operational
-- Rate limiting and security measures in place
-- Cloud storage integration complete
-- API endpoints fully documented
 
 ## Core Features
 
@@ -65,40 +52,115 @@ A robust Node.js backend service for art and antique image analysis using Google
 - Visual similarity search with parallel API processing
 - Comprehensive image metadata extraction
 
-### Security & Privacy
-- Email encryption using AES-256-GCM
-- Argon2 password hashing
-- Rate limiting protection (5 requests per minute)
-- Secure session management
-- CORS protection with domain allowlist
-- Request timeout handling (5s for external resources)
-
 ### Storage & Data Management
 - Session-based file organization
 - Automatic file cleanup
 - Structured JSON storage for analysis results
 - Metadata tracking for all uploads
-- Efficient URL validation with timeouts
 
 ### Cloud Integration
 - Google Cloud Storage for file management
 - Google Cloud Secret Manager for secure configuration
 - Google Cloud Vision API for image analysis
 - OpenAI GPT-4 Vision for expert analysis
-- SendGrid for email delivery
-- Google Sheets for logging and tracking
-
-### Email Features
-- Professional HTML email templates
-- Secure email encryption
-- Rate-limited submissions
-- Dynamic email content generation
-- Personalized offer emails
-- Comprehensive analysis reports
-- Smart retry logic for analysis completion
-- Parallel email delivery
+- Google Cloud Pub/Sub for event publishing
 
 ## API Endpoints
+
+### Step-by-Step Endpoint Actions
+
+#### 1. Image Upload (`POST /upload-temp`)
+1. User submits an image file (JPEG, PNG, or WebP, max 10MB)
+2. System:
+   - Generates a unique session ID
+   - Creates a session folder in cloud storage
+   - Saves the image with standardized naming
+   - Creates metadata about the upload
+3. Returns:
+   - Session ID for tracking
+   - Public URL to access the image
+   - Success confirmation
+
+#### 2. Session Data (`GET /session/{sessionId}`)
+1. User provides a session ID
+2. System retrieves:
+   - Session metadata (file info, timestamps)
+   - Visual analysis results (if completed)
+   - Origin analysis results (if completed)
+3. Returns consolidated session data including:
+   - Original upload information
+   - Analysis status and results
+   - Processing timestamps
+
+#### 3. Visual Analysis (`POST /visual-search`)
+1. User submits a session ID for analysis
+2. System performs:
+   - Google Vision API analysis for web detection
+   - OpenAI Vision analysis for expert insights
+   - Parallel processing of both analyses
+3. Results include:
+   - Similar images found online
+   - Web entities and labels
+   - Category classification
+   - Confidence scores
+   - Expert description
+
+#### 4. Origin Analysis (`POST /origin-analysis`)
+1. User requests origin analysis with session ID
+2. System:
+   - Retrieves visual analysis (runs it if not exists)
+   - Filters and validates similar images
+   - Performs OpenAI analysis for authenticity
+3. Provides:
+   - Originality assessment
+   - Style analysis
+   - Unique characteristics
+   - Comparison with similar works
+   - Professional recommendations
+
+#### 5. Full Analysis (`POST /full-analysis`)
+1. User requests comprehensive analysis
+2. System performs detailed AI analysis including:
+   - Maker/artist identification
+   - Signature verification
+   - Origin determination
+   - Marks and hallmarks recognition
+   - Age estimation
+   - Similar artwork comparison
+3. Returns:
+   - Complete analysis report
+   - All metadata
+   - Detailed findings in each category
+
+#### 6. Submit Email (`POST /submit-email`)
+1. User submits email with session ID
+2. System:
+   - Validates email format
+   - Associates email with session
+   - Queues CRM notification
+3. Returns:
+   - Submission confirmation
+   - Timestamp
+   - Processing status
+
+#### 7. Health Check (`GET /api/health/status`)
+1. User or monitoring system checks service health
+2. System verifies:
+   - Storage connectivity
+   - Vision API availability
+   - Overall service status
+3. Returns:
+   - Service health status
+   - Uptime information
+   - Component status details
+
+#### 8. API Documentation (`GET /api/health/endpoints`)
+1. User requests API documentation
+2. System provides:
+   - Complete endpoint listing
+   - Required parameters
+   - Response formats
+   - Service version information
 
 ### Image Upload
 ```http
@@ -244,46 +306,19 @@ Response: {
 }
 ```
 
-### Email Submission
-```http
-POST /submit-email
-Content-Type: application/json
+## Event Publishing
 
+The service publishes events to Google Cloud Pub/Sub for the following scenarios:
+
+### Analysis Complete
+Topic: `art-analysis-complete`
+```json
 {
-  "email": string,
-  "sessionId": string
+  "sessionId": "string",
+  "timestamp": "number",
+  "analysisType": "visual|origin|full",
+  "results": "object"
 }
-
-Response: {
-  "success": boolean,
-  "message": string,
-  "emailHash": string,
-  "submissionTime": number
-}
-```
-
-## Data Logging
-
-### Google Sheets Structure
-The application logs all operations to a Google Sheet with the following columns:
-
-```
-A: Row Number
-B: Session ID
-C: Upload Time
-D: Image URL
-E: Analysis Status
-F: Analysis Time
-G: Origin Status
-H: Origin Time
-I: Email
-J: Email Submission Time
-K: Free Report Status
-L: Free Report Time
-M: Offer Status
-N: Offer Time
-O: Offer Delivered
-P: Offer Content
 ```
 
 ## Required Environment Variables
@@ -292,14 +327,8 @@ The following secrets must be configured in Google Cloud Secret Manager:
 - `GOOGLE_CLOUD_PROJECT_ID`
 - `GCS_BUCKET_NAME`
 - `OPENAI_API_KEY`
-- `EMAIL_ENCRYPTION_KEY`
 - `SERVICE_ACCOUNT_JSON`
-- `SENDGRID_API_KEY`
-- `SENDGRID_EMAIL`
-- `SEND_GRID_TEMPLATE_FREE_REPORT`
-- `SEND_GRID_TEMPLATE_PERSONAL_OFFER`
-- `DIRECT_API_KEY` (for Michelle API)
-- `SHEETS_ID_FREE_REPORTS_LOG`
+- `PUBSUB_TOPIC_ANALYSIS_COMPLETE`
 
 ## Development
 
@@ -324,6 +353,6 @@ The server will start on port 8080 by default.
 Build and run using Docker:
 
 ```bash
-docker build -t art-appraisal-backend .
-docker run -p 8080:8080 art-appraisal-backend
+docker build -t art-analysis-backend .
+docker run -p 8080:8080 art-analysis-backend
 ```

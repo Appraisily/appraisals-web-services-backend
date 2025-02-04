@@ -1,9 +1,9 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
-const { filterValidImageUrls } = require('../utils/urlValidator');
-const originFormatter = require('../services/originFormatter');
-const sheetsService = require('../services/sheets');
+const { filterValidImageUrls } = require('../utils/validators');
+const { formatOriginAnalysis } = require('../utils/formatters');
+const pubsubService = require('../services/pubsub');
 const fetch = require('node-fetch');
 
 const router = express.Router();
