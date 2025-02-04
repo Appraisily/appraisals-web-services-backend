@@ -2,6 +2,7 @@ const express = require('express');
 const cloudServices = require('../services/storage');
 const openai = require('../services/openai');
 const pubsubService = require('../services/pubsub'); 
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -58,6 +59,18 @@ router.post('/full-analysis', async (req, res) => {
       });
 
       // Log new analysis to sheets
+      try {
+        await sheetsService.updateAnalysisStatus(
+          sessionId,
+          'detailed',
+          detailedAnalysis
+        );
+        console.log('✓ Detailed analysis logged to sheets');
+      } catch (error) {
+        console.error('Failed to log detailed analysis to sheets:', error);
+        // Don't fail the request if sheets logging fails
+      }
+
       // Publish analysis complete event
       await pubsubService.publishToCRM({
         crmProcess: "analysisComplete",

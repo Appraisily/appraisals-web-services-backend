@@ -3,7 +3,6 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const mime = require('mime-types');
 const cloudServices = require('../services/storage');
-const pubsubService = require('../services/pubsub');
 const sheetsService = require('../services/sheets');
 
 const router = express.Router();
@@ -105,7 +104,6 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     console.log(`  ├── ${imageFileName}`);
     console.log(`  └── metadata.json`);
 
-    // Log upload to sheets
     try {
       await sheetsService.logUpload(
         sessionId,
@@ -118,18 +116,13 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
       // Don't fail the request if sheets logging fails
     }
 
-    // Publish upload event
-    await pubsubService.publishMessage('upload-complete', {
-      sessionId,
-      timestamp: sessionMetadata.timestamp,
-      imageUrl
-    });
-
     res.json({
       success: true,
       message: 'Image uploaded successfully.',
-      imageUrl: imageUrl,
-      sessionId: sessionId
+      customerImageUrl: imageUrl,
+      sessionId: sessionId,
+      similarImageUrls: [], // Will be populated by visual search later
+      itemType: undefined   // Will be determined by analysis later
     });
 
     console.log('Response sent to client successfully.');

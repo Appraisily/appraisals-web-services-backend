@@ -70,16 +70,66 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 ### Step-by-Step Endpoint Actions
 
 #### 1. Image Upload (`POST /upload-temp`)
-1. User submits an image file (JPEG, PNG, or WebP, max 10MB)
-2. System:
-   - Generates a unique session ID
-   - Creates a session folder in cloud storage
-   - Saves the image with standardized naming
-   - Creates metadata about the upload
-3. Returns:
-   - Session ID for tracking
-   - Public URL to access the image
-   - Success confirmation
+Handles the initial image upload and creates a new analysis session.
+
+1. **Request Validation**
+   - Validates presence of image file
+   - Checks file type (JPEG, PNG, WebP only)
+   - Enforces 10MB size limit
+
+2. **Session Creation**
+   - Generates unique session ID (UUID)
+   - Creates session folder in Google Cloud Storage
+   - Standardizes image filename: `UserUploadedImage.[ext]`
+
+3. **Metadata Generation**
+   ```json
+   {
+     "originalName": "string",
+     "timestamp": "number",
+     "analyzed": false,
+     "mimeType": "string",
+     "size": "number",
+     "fileName": "string",
+     "imageUrl": "string"
+   }
+   ```
+
+4. **Storage Operations**
+   - Creates session folder structure:
+     ```
+     sessions/{sessionId}/
+     ├── UserUploadedImage.[ext]
+     └── metadata.json
+     ```
+   - Uploads image with public caching (3600s)
+   - Saves metadata with no-cache setting
+
+5. **Logging**
+   - Logs upload to Google Sheets:
+     - Timestamp
+     - Session ID
+     - Upload time
+     - Image URL
+
+6. **Response Format**
+   ```typescript
+   {
+     success: boolean;
+     message?: string;
+     customerImageUrl: string;
+     sessionId: string;
+     similarImageUrls?: string[];
+     itemType?: 'Art' | 'Antique';
+   }
+   ```
+
+7. **Error Handling**
+   - Invalid file type: 400 Bad Request
+   - Missing file: 400 Bad Request
+   - Storage errors: 500 Internal Server Error
+   - Metadata errors: 500 Internal Server Error
+   - Sheets logging: Non-blocking (continues on error)
 
 #### 2. Session Data (`GET /session/{sessionId}`)
 1. User provides a session ID
