@@ -119,10 +119,8 @@ router.post('/upload-temp', upload.single('image'), async (req, res) => {
     res.json({
       success: true,
       message: 'Image uploaded successfully.',
-      customerImageUrl: imageUrl,
-      sessionId: sessionId,
-      similarImageUrls: [], // Will be populated by visual search later
-      itemType: undefined   // Will be determined by analysis later
+      imageUrl: imageUrl,
+      sessionId: sessionId
     });
 
     console.log('Response sent to client successfully.');
