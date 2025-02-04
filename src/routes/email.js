@@ -1,6 +1,7 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const validator = require('validator');
+const sheetsService = require('../services/sheets');
 const pubsubService = require('../services/pubsub');
 const cloudServices = require('../services/storage');
 
@@ -76,6 +77,30 @@ router.post('/submit-email', limiter, async (req, res) => {
     // Publish to CRM-tasks topic
     await pubsubService.publishToCRM(message);
     console.log('✓ Message published to CRM-tasks');
+
+    // Update Google Sheets with email submission
+    try {
+      const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+      if (rowIndex === -1) {
+        console.warn(`Session ID ${sessionId} not found in spreadsheet`);
+      } else {
+        await sheetsService.sheets.spreadsheets.values.update({
+          spreadsheetId: sheetsService.sheetsId,
+          range: `Sheet1!K${rowIndex + 1}:L${rowIndex + 1}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [[
+              email,
+              new Date().toISOString()
+            ]]
+          }
+        });
+        console.log('✓ Email submission logged to sheets');
+      }
+    } catch (error) {
+      console.error('Failed to log email submission to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     // Update metadata with email submission
     metadata.email = {

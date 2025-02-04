@@ -116,11 +116,9 @@ Handles the initial image upload and creates a new analysis session.
    ```typescript
    {
      success: boolean;
-     message?: string;
-     customerImageUrl: string;
-     sessionId: string;
-     similarImageUrls?: string[];
-     itemType?: 'Art' | 'Antique';
+     message?: string;  // Optional error message if success is false
+     imageUrl: string;  // URL of the uploaded image
+     sessionId: string;  // Unique session identifier
    }
    ```
 
