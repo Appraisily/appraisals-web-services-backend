@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 const { getModel } = require('../config/models');
-const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT } = require('../config/prompts');
+const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT, HTML_REPORT_PROMPT } = require('../config/prompts');
 
 class OpenAIService {
   constructor() {
