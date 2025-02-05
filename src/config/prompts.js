@@ -132,7 +132,7 @@ Format the report to include:
 2. Origin Analysis Details
 3. Full Analysis Findings
 
-Keep the formatting clean and professional. Do not include any styling or other HTML tags.`;
+Keep the formatting clean and professional. Do not include any styling or other HTML tags. Do not include references to AI or OpenAI`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
