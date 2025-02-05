@@ -183,13 +183,43 @@ Handles the initial image upload and creates a new analysis session.
 #### 6. Submit Email (`POST /submit-email`)
 1. User submits email with session ID
 2. System:
-   - Validates email format
-   - Associates email with session
-   - Queues CRM notification
+   - Validates email format and session existence
+   - Ensures all required analyses are complete:
+     - Visual analysis
+     - Origin analysis
+     - Detailed analysis
+   - Generates HTML report using OpenAI
+   - Saves report to session folder
+   - Queues CRM notification with session details
+   - Updates Google Sheets log
+   - Updates session metadata
 3. Returns:
    - Submission confirmation
    - Timestamp
    - Processing status
+
+4. Session Folder Structure After Email Submission:
+   ```
+   sessions/{sessionId}/
+   ├── UserUploadedImage.[ext]
+   ├── metadata.json
+   ├── analysis.json
+   ├── origin.json
+   ├── detailed.json
+   └── report.html
+   ```
+
+5. HTML Report Generation:
+   - Uses OpenAI o3-mini-high model
+   - Combines all analysis results
+   - Generates clean HTML with only:
+     - Paragraphs (<p>)
+     - Bold text (<b>)
+     - Line breaks (<br>)
+   - Includes sections for:
+     - Visual Analysis Summary
+     - Origin Analysis Details
+     - Full Analysis Findings
 
 #### 7. Health Check (`GET /api/health/status`)
 1. User or monitoring system checks service health
@@ -377,7 +407,10 @@ Topic: `CRM-tasks`
 }
 ```
 
-This message is published when a user submits their email for analysis results. All required analyses (visual, origin, and detailed) must be completed before the message is published.
+This message is published when a user submits their email for analysis results. The following steps must be completed before the message is published:
+1. All required analyses (visual, origin, and detailed) are completed
+2. HTML report is generated and saved
+3. Session metadata is updated with email submission details
 
 ## Required Environment Variables
 

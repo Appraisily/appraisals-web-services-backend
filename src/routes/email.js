@@ -141,6 +141,24 @@ router.post('/submit-email', limiter, async (req, res) => {
     if (!finalDetailedExists) {
       throw new Error('Failed to complete detailed analysis');
     }
+    
+    // Generate HTML report
+    console.log('\nGenerating HTML report...');
+    try {
+      await cloudServices.generateHtmlReport(sessionId);
+      console.log('✓ HTML report generated and saved to GCS');
+
+      // Verify report was created
+      const [reportExists] = await bucket.file(`sessions/${sessionId}/report.html`).exists();
+      if (!reportExists) {
+        throw new Error('HTML report file was not created');
+      }
+      console.log('✓ HTML report file verified');
+    } catch (error) {
+      console.error('Error generating HTML report:', error);
+      console.error('Stack trace:', error.stack);
+      throw new Error('Failed to generate HTML report: ' + error.message);
+    }
 
     // Prepare message for CRM
     const message = {

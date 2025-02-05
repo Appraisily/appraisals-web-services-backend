@@ -54,6 +54,48 @@ class CloudServices {
   getVisionClient() {
     return this.visionClient;
   }
+
+  async generateHtmlReport(sessionId) {
+    if (!this.bucket) {
+      throw new Error('Storage not initialized');
+    }
+
+    try {
+      console.log(`Generating HTML report for session ${sessionId}...`);
+      
+      // Load all analysis files
+      const [analysisContent, originContent, detailedContent] = await Promise.all([
+        this.bucket.file(`sessions/${sessionId}/analysis.json`).download().then(([content]) => JSON.parse(content.toString())),
+        this.bucket.file(`sessions/${sessionId}/origin.json`).download().then(([content]) => JSON.parse(content.toString())),
+        this.bucket.file(`sessions/${sessionId}/detailed.json`).download().then(([content]) => JSON.parse(content.toString()))
+      ]);
+
+      // Prepare data for OpenAI
+      const reportData = {
+        visualAnalysis: analysisContent,
+        originAnalysis: originContent,
+        detailedAnalysis: detailedContent
+      };
+
+      // Generate HTML report
+      const htmlContent = await openai.generateHtmlReport(reportData);
+
+      // Save HTML report
+      const reportFile = this.bucket.file(`sessions/${sessionId}/report.html`);
+      await reportFile.save(htmlContent, {
+        contentType: 'text/html',
+        metadata: {
+          cacheControl: 'no-cache'
+        }
+      });
+
+      console.log('✓ HTML report generated and saved');
+      return htmlContent;
+    } catch (error) {
+      console.error('Error generating HTML report:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CloudServices();

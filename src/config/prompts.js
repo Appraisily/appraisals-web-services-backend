@@ -120,9 +120,23 @@ IMPORTANT:
 - Do not include any additional keys beyond these.
 `;
 
+const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.
+
+Use only these HTML tags:
+- <p> for paragraphs
+- <b> for bold text
+- <br> for line breaks
+
+Format the report to include:
+1. Visual Analysis Summary
+2. Origin Analysis Details
+3. Full Analysis Findings
+
+Keep the formatting clean and professional. Do not include any styling or other HTML tags.`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
   ORIGIN_ANALYSIS_PROMPT,
-  FULL_ANALYSIS_PROMPT
+  FULL_ANALYSIS_PROMPT,
+  HTML_REPORT_PROMPT
 };

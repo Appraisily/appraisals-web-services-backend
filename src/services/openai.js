@@ -154,6 +154,37 @@ class OpenAIService {
       throw error;
     }
   }
+
+  async generateHtmlReport(analysisData) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: getModel('HTML_REPORT'),
+        messages: [
+          {
+            role: "system",
+            content: HTML_REPORT_PROMPT
+          },
+          {
+            role: "assistant",
+            content: "I will help generate a clean HTML report using only <p>, <b>, and <br> tags."
+          },
+          {
+            role: "user",
+            content: JSON.stringify(analysisData)
+          }
+        ]
+      });
+
+      return response.choices[0]?.message?.content || '';
+    } catch (error) {
+      console.error('Error generating HTML report with OpenAI:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new OpenAIService();
