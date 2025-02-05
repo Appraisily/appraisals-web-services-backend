@@ -14,6 +14,9 @@ const healthRouter = require('./src/routes/health');
 
 const app = express();
 
+// Enable trust proxy for rate limiter to work with forwarded requests
+app.enable('trust proxy');
+
 app.use(express.json());
 
 app.use(corsMiddleware);

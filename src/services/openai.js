@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 const { getModel } = require('../config/models');
-const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT } = require('../config/prompts');
+const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT, HTML_REPORT_PROMPT } = require('../config/prompts');
 
 class OpenAIService {
   constructor() {
@@ -151,6 +151,33 @@ class OpenAIService {
       }
     } catch (error) {
       console.error('Error performing full analysis with OpenAI:', error);
+      throw error;
+    }
+  }
+
+  async generateHtmlReport(analysisData) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: getModel('HTML_REPORT'),
+        messages: [
+          {
+            role: "assistant",
+            content: `${HTML_REPORT_PROMPT}\n\nI will help generate a clean HTML report using only <p>, <b>, and <br> tags.`
+          },
+          {
+            role: "assistant",
+            content: JSON.stringify(analysisData)
+          }
+        ]
+      });
+
+      return response.choices[0]?.message?.content || '';
+    } catch (error) {
+      console.error('Error generating HTML report with OpenAI:', error);
       throw error;
     }
   }

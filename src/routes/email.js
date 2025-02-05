@@ -4,6 +4,7 @@ const validator = require('validator');
 const sheetsService = require('../services/sheets');
 const pubsubService = require('../services/pubsub');
 const cloudServices = require('../services/storage');
+const fetch = require('node-fetch');
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.post('/submit-email', limiter, async (req, res) => {
     }
 
     // Get session metadata
+    console.log('Checking session and analysis files...');
     const bucket = cloudServices.getBucket();
     const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
     const [exists] = await metadataFile.exists();
@@ -55,23 +57,123 @@ router.post('/submit-email', limiter, async (req, res) => {
     const [metadataContent] = await metadataFile.download();
     const metadata = JSON.parse(metadataContent.toString());
 
+    // Check for required analysis files
+    const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
+    const originFile = bucket.file(`sessions/${sessionId}/origin.json`);
+    const detailedFile = bucket.file(`sessions/${sessionId}/detailed.json`);
+
+    const [analysisExists, originExists, detailedExists] = await Promise.all([
+      analysisFile.exists(),
+      originFile.exists(),
+      detailedFile.exists()
+    ]);
+
+    // Get base URL for API calls
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Trigger missing analyses in sequence
+    if (!analysisExists[0]) {
+      console.log('Visual analysis missing, triggering analysis...');
+      try {
+        const response = await fetch(`${baseUrl}/visual-search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Visual search failed with status ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to perform visual analysis:', error);
+        throw new Error('Failed to complete required visual analysis');
+      }
+    }
+
+    if (!originExists[0]) {
+      console.log('Origin analysis missing, triggering analysis...');
+      try {
+        const response = await fetch(`${baseUrl}/origin-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Origin analysis failed with status ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to perform origin analysis:', error);
+        throw new Error('Failed to complete required origin analysis');
+      }
+    }
+
+    // Verify all analyses are now complete
+    const [finalAnalysisExists, finalOriginExists] = await Promise.all([
+      bucket.file(`sessions/${sessionId}/analysis.json`).exists(),
+      bucket.file(`sessions/${sessionId}/origin.json`).exists()
+    ]);
+
+    if (!finalAnalysisExists[0] || !finalOriginExists[0]) {
+      throw new Error('Failed to complete all required analyses');
+    }
+
+    if (!detailedExists[0]) {
+      console.log('Detailed analysis missing, triggering analysis...');
+      try {
+        const response = await fetch(`${baseUrl}/full-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Detailed analysis failed with status ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to perform detailed analysis:', error);
+        throw new Error('Failed to complete required detailed analysis');
+      }
+    }
+
+    // Verify detailed analysis is now complete
+    const [finalDetailedExists] = await bucket.file(`sessions/${sessionId}/detailed.json`).exists();
+    if (!finalDetailedExists) {
+      throw new Error('Failed to complete detailed analysis');
+    }
+    
+    // Generate HTML report
+    console.log('\nGenerating HTML report...');
+    try {
+      await cloudServices.generateHtmlReport(sessionId);
+      console.log('✓ HTML report generated and saved to GCS');
+
+      // Verify report was created
+      const [reportExists] = await bucket.file(`sessions/${sessionId}/report.html`).exists();
+      if (!reportExists) {
+        throw new Error('HTML report file was not created');
+      }
+      console.log('✓ HTML report file verified');
+    } catch (error) {
+      console.error('Error generating HTML report:', error);
+      console.error('Stack trace:', error.stack);
+      throw new Error('Failed to generate HTML report: ' + error.message);
+    }
+
     // Prepare message for CRM
     const message = {
       crmProcess: "screenerNotification",
       customer: {
         email: email
       },
-      origin: "screener",
-      timestamp: Date.now(),
       sessionId: sessionId,
       metadata: {
-        analysisId: sessionId,
-        source: "analysis-backend",
-        imageUrl: metadata.imageUrl,
         originalName: metadata.originalName,
-        analyzed: metadata.analyzed,
-        originAnalyzed: metadata.originAnalyzed || false
-      }
+        imageUrl: metadata.imageUrl,
+        mimeType: metadata.mimeType,
+        size: metadata.size
+      },
+      timestamp: Date.now()
     };
 
     // Publish to CRM-tasks topic
