@@ -358,16 +358,26 @@ Response: {
 
 The service publishes events to Google Cloud Pub/Sub for the following scenarios:
 
-### Analysis Complete
-Topic: `art-analysis-complete`
+### CRM Notification
+Topic: `CRM-tasks`
 ```json
 {
+  "crmProcess": "screenerNotification",
+  "customer": {
+    "email": "string"
+  },
   "sessionId": "string",
-  "timestamp": "number",
-  "analysisType": "visual|origin|full",
-  "results": "object"
+  "metadata": {
+    "originalName": "string",
+    "imageUrl": "string",
+    "mimeType": "string",
+    "size": "number"
+  },
+  "timestamp": "number"
 }
 ```
+
+This message is published when a user submits their email for analysis results. All required analyses (visual, origin, and detailed) must be completed before the message is published.
 
 ## Required Environment Variables
 

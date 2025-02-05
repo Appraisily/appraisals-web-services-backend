@@ -148,17 +148,14 @@ router.post('/submit-email', limiter, async (req, res) => {
       customer: {
         email: email
       },
-      origin: "screener",
-      timestamp: Date.now(),
       sessionId: sessionId,
       metadata: {
-        analysisId: sessionId,
-        source: "analysis-backend",
-        imageUrl: metadata.imageUrl,
         originalName: metadata.originalName,
-        analyzed: metadata.analyzed,
-        originAnalyzed: metadata.originAnalyzed || false
-      }
+        imageUrl: metadata.imageUrl,
+        mimeType: metadata.mimeType,
+        size: metadata.size
+      },
+      timestamp: Date.now()
     };
 
     // Publish to CRM-tasks topic
