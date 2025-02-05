@@ -12,6 +12,10 @@ const router = express.Router();
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5,
+  validate: {
+    trustProxy: false,
+    xForwardedForHeader: true
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: {
