@@ -175,8 +175,8 @@ Format the report to include:
 Keep the formatting clean and professional. Do not include any styling attributes or other HTML tags. Do not include references to AI or OpenAI. Feel free to chang what you consider apropiate, if any data is missing, you can skip it in the final html.
 
 For images:
+- Display the main item image prominently at the top
 - Include relevant similar images in the visual analysis section
-- Images should be inside the corresponding image tags, specify the size of the images so larger images do not occupy the full screen.
 - Show comparison images in a grid layout when discussing similarities
 - Use the stored image URLs provided in the analysis data
 

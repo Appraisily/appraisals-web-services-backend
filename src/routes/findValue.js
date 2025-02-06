@@ -41,7 +41,7 @@ router.post('/find-value', async (req, res) => {
     }
 
     // Call valuer agent API
-    const response = await fetch('https://valuer-agent-856401495068.us-central1.run.app/api/find-value', {
+    const response = await fetch('https://valuer-agent-856401495068.us-central1.run.app/api/find-value-range', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -63,7 +63,11 @@ router.post('/find-value', async (req, res) => {
     const valueResults = {
       timestamp: Date.now(),
       query: detailedAnalysis.concise_description,
-      ...valueData
+      success: valueData.success,
+      minValue: valueData.minValue,
+      maxValue: valueData.maxValue,
+      mostLikelyValue: valueData.mostLikelyValue,
+      explanation: valueData.explanation
     };
     
     await valueFile.save(JSON.stringify(valueResults, null, 2), {

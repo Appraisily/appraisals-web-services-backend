@@ -1,6 +1,6 @@
 # Art Analysis Backend Service
 
-A specialized Node.js backend service focused on art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and visual search capabilities.
+A specialized Node.js backend service focused on art and antique image analysis using Google Cloud Vision API and OpenAI Vision. This service provides comprehensive artwork analysis, origin determination, and visual search capabilities, deployed on Google Cloud Run with automated health checks.
 
 ## Overview
 
@@ -9,51 +9,28 @@ This service is part of a microservices architecture, specifically handling:
 - Visual similarity analysis
 - Origin determination
 - Detailed artwork analysis
+- Automated health monitoring
 
-The service communicates with other components through Google Cloud Pub/Sub for asynchronous operations like email notifications and user communications.
+The service communicates with other components through Google Cloud Pub/Sub for asynchronous operations and maintains high availability through scheduled health checks.
 
-## Repository Structure
+## Features
 
-```
-.
-├── Dockerfile
-├── README.md
-├── index.js
-├── package.json
-└── src/
-    ├── config/
-    │   ├── models.js        # OpenAI model configuration
-    │   ├── prompts.js       # System prompts for AI analysis
-    │   └── secrets.js       # Secret management configuration
-    ├── middleware/
-    │   └── cors.js          # CORS configuration
-    ├── routes/
-    │   ├── fullAnalysis.js  # Complete artwork analysis
-    │   ├── health.js        # Health check endpoints
-    │   ├── originAnalysis.js # Origin determination
-    │   ├── findValue.js     # Value estimation
-    │   ├── session.js       # Session management
-    │   ├── upload.js        # File upload handling
-    │   └── visualSearch.js  # Visual search processing
-    ├── services/
-    │   ├── openai.js        # OpenAI integration
-    │   ├── pubsub.js        # Pub/Sub message publishing
-    │   ├── storage.js       # Cloud storage management
-    │   └── vision.js        # Google Vision integration
-    └── utils/
-        ├── validators.js    # Input validation utilities
-        └── formatters.js    # Response formatting utilities
-```
-
-## Core Features
-
-### Image Analysis
+### Core Analysis Features
 - Dual analysis system using Google Cloud Vision and OpenAI Vision
 - Origin analysis for artwork authenticity
-- Visual similarity search with parallel API processing and local storage
+- Visual similarity search with parallel API processing
 - Value estimation using AI-powered valuation model
 - Comprehensive image metadata extraction
 - Concise 5-word descriptions for quick item identification
+
+### Technical Features
+- RESTful API endpoints
+- Automatic scaling with Cloud Run
+- Scheduled health checks via Cloud Scheduler
+- Secure secret management
+- Rate limiting and CORS protection
+- Comprehensive error handling
+- Detailed logging and monitoring
 
 ### Storage & Data Management
 - Session-based file organization
@@ -69,435 +46,186 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 - Google Cloud Vision API for image analysis
 - OpenAI GPT-4 Vision for expert analysis
 - Google Cloud Pub/Sub for event publishing
+- Cloud Scheduler for health monitoring
 
-## API Endpoints
+## Repository Structure
 
-### Step-by-Step Endpoint Actions
+\`\`\`
+.
+├── Dockerfile                # Container configuration
+├── README.md                # Project documentation
+├── index.js                 # Application entry point
+├── package.json             # Dependencies and scripts
+└── src/
+    ├── config/             # Configuration files
+    │   ├── models.js       # OpenAI model configuration
+    │   ├── prompts.js      # System prompts for AI analysis
+    │   └── secrets.js      # Secret management configuration
+    ├── features/           # Feature modules
+    │   └── visualSearch/   # Visual search feature
+    │       ├── controllers/
+    │       ├── routes/
+    │       └── utils/
+    ├── middleware/         # Global middleware
+    │   └── cors.js        # CORS configuration
+    ├── routes/            # API routes
+    │   ├── email.js       # Email submission handling
+    │   ├── findValue.js   # Value estimation
+    │   ├── fullAnalysis.js # Complete artwork analysis
+    │   ├── health.js      # Health check endpoints
+    │   ├── session.js     # Session management
+    │   └── upload.js      # File upload handling
+    ├── services/          # Core services
+    │   ├── openai.js      # OpenAI integration
+    │   ├── pubsub.js      # Pub/Sub message publishing
+    │   ├── storage.js     # Cloud storage management
+    │   └── sheets.js      # Google Sheets integration
+    └── utils/             # Utility functions
+        └── urlValidator.js # URL validation utilities
+\`\`\`
 
-#### 1. Image Upload (`POST /upload-temp`)
-Handles the initial image upload and creates a new analysis session.
+## Prerequisites
 
-1. **Request Validation**
-   - Validates presence of image file
-   - Checks file type (JPEG, PNG, WebP only)
-   - Enforces 10MB size limit
+1. Google Cloud SDK installed and configured
+2. Node.js 18 or later
+3. Docker installed (for local development)
+4. Enabled Google Cloud APIs:
+   - Cloud Run API
+   - Cloud Build API
+   - Cloud Scheduler API
+   - Secret Manager API
+   - Cloud Storage API
+   - Cloud Vision API
+   - Cloud Pub/Sub API
 
-2. **Session Creation**
-   - Generates unique session ID (UUID)
-   - Creates session folder in Google Cloud Storage
-   - Standardizes image filename: `UserUploadedImage.[ext]`
-   - Creates session folder structure
+## Local Development
 
-3. **Metadata Generation**
-   ```json
-   {
-     "originalName": "string",
-     "timestamp": "number",
-     "analyzed": false,
-     "mimeType": "string",
-     "size": "number",
-     "fileName": "string",
-     "imageUrl": "string"
-   }
-   ```
+1. Clone the repository:
+   \`\`\`bash
+   git clone [repository-url]
+   cd appraisals-web-services-backend
+   \`\`\`
 
-4. **Storage Operations**
-   - Creates session folder structure:
-     ```
-     sessions/{sessionId}/
-     ├── UserUploadedImage.[ext]
-     ├── metadata.json
-     ├── analysis.json      # Visual analysis results
-     ├── origin.json       # Origin analysis results
-     ├── detailed.json     # Detailed analysis results
-     ├── value.json       # Value estimation results
-     └── report.html      # Generated HTML report
-     ```
-   - Uploads image with public caching (3600s)
-   - Saves metadata with no-cache setting
+2. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-5. **Logging**
-   - Logs upload to Google Sheets:
-     - Timestamp
-     - Session ID
-     - Upload time
-     - Image URL
+3. Set up environment variables:
+   \`\`\`bash
+   export GOOGLE_CLOUD_PROJECT_ID="your-project-id"
+   export GCS_BUCKET_NAME="your-bucket-name"
+   export OPENAI_API_KEY="your-openai-key"
+   \`\`\`
 
-6. **Response Format**
-   ```typescript
-   {
-     success: boolean;
-     message?: string;  // Optional error message if success is false
-     imageUrl: string;  // URL of the uploaded image
-     sessionId: string;  // Unique session identifier
-   }
-   ```
+4. Run locally:
+   \`\`\`bash
+   npm start
+   \`\`\`
 
-7. **Error Handling**
-   - Invalid file type: 400 Bad Request
-   - Missing file: 400 Bad Request
-   - Storage errors: 500 Internal Server Error
-   - Metadata errors: 500 Internal Server Error
-   - Sheets logging: Non-blocking (continues on error)
+5. Test the health endpoint:
+   \`\`\`bash
+   curl http://localhost:8080/api/health/status
+   \`\`\`
 
-#### 2. Session Data (`GET /session/{sessionId}`)
-1. User provides a session ID
-2. System retrieves:
-   - Session metadata (file info, timestamps)
-   - Visual analysis results (if completed)
-   - Origin analysis results (if completed)
-3. Returns consolidated session data including:
-   - Original upload information
-   - Analysis status and results
-   - Processing timestamps
+## Deploying to Cloud Run
 
-#### 3. Visual Analysis (`POST /visual-search`)
-1. User submits a session ID for analysis
-2. System performs:
-   - Google Vision API analysis for web detection
-   - OpenAI Vision analysis for expert insights
-   - Parallel processing of both analyses
-3. Results include:
-   - Similar images found online
-   - Web entities and labels
-   - Category classification
-   - Confidence scores
-   - Expert description
+1. Build and push the container image:
+   \`\`\`bash
+   gcloud builds submit --tag gcr.io/[PROJECT_ID]/art-analysis-backend
+   \`\`\`
 
-#### 4. Origin Analysis (`POST /origin-analysis`)
-1. User requests origin analysis with session ID
-2. System:
-   - Retrieves visual analysis (runs it if not exists)
-   - Filters and validates similar images
-   - Performs OpenAI analysis for authenticity
-3. Provides:
-   - Originality assessment
-   - Style analysis
-   - Unique characteristics
-   - Comparison with similar works
-   - Professional recommendations
+2. Deploy to Cloud Run:
+   \`\`\`bash
+   gcloud run deploy art-analysis-backend \
+     --image gcr.io/[PROJECT_ID]/art-analysis-backend \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --memory 2Gi \
+     --cpu 2 \
+     --timeout 300 \
+     --set-env-vars "GOOGLE_CLOUD_PROJECT_ID=[PROJECT_ID]" \
+     --set-secrets "OPENAI_API_KEY=openai-api-key:latest,GCS_BUCKET_NAME=gcs-bucket-name:latest"
+   \`\`\`
 
-#### 5. Full Analysis (`POST /full-analysis`)
-1. User requests comprehensive analysis
-2. System performs detailed AI analysis including:
-   - Maker/artist identification
-   - Signature verification
-   - Origin determination
-   - Marks and hallmarks recognition
-   - Age estimation
-   - Similar artwork comparison
-3. Returns:
-   - Complete analysis report
-   - All metadata
-   - Detailed findings in each category
+## Setting Up Cloud Scheduler
 
-#### 6. Submit Email (`POST /submit-email`)
-1. User submits email with session ID
-2. System:
-   - Validates email format and session existence
-   - Ensures all required analyses are complete:
-     - Visual analysis
-     - Origin analysis
-     - Detailed analysis
-   - Generates HTML report using OpenAI
-   - Saves report to session folder
-   - Queues CRM notification with session details
-   - Updates Google Sheets log
-   - Updates session metadata
-3. Returns:
-   - Submission confirmation
-   - Timestamp
-   - Processing status
+1. Create a scheduler job for health checks:
+   \`\`\`bash
+   gcloud scheduler jobs create http keep-alive-art-analysis \
+     --schedule="*/30 * * * *" \
+     --uri="https://[SERVICE_URL]/api/health/status" \
+     --http-method=GET \
+     --attempt-deadline=30s \
+     --time-zone="UTC" \
+     --location=us-central1
+   \`\`\`
 
-4. Session Folder Structure After Email Submission:
-   ```
-   sessions/{sessionId}/
-   ├── UserUploadedImage.[ext]
-   ├── metadata.json
-   ├── analysis.json
-   ├── origin.json
-   ├── detailed.json
-   └── report.html
-   ```
+2. Verify the job:
+   \`\`\`bash
+   gcloud scheduler jobs describe keep-alive-art-analysis --location=us-central1
+   \`\`\`
 
-5. HTML Report Generation:
-   - Uses OpenAI o3-mini-high model
-   - Combines all analysis results
-   - Generates clean HTML with only:
-     - Paragraphs (<p>)
-     - Bold text (<b>)
-     - Line breaks (<br>)
-   - Includes sections for:
-     - Visual Analysis Summary
-     - Origin Analysis Details
-     - Full Analysis Findings
+## Logging and Monitoring
 
-#### 7. Health Check (`GET /api/health/status`)
-1. User or monitoring system checks service health
-2. System verifies:
-   - Storage connectivity
-   - Vision API availability
-   - Overall service status
-3. Returns:
-   - Service health status
-   - Uptime information
-   - Component status details
+### Viewing Logs
+\`\`\`bash
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=art-analysis-backend" --limit 50
+\`\`\`
 
-#### 8. Value Estimation (`POST /find-value`)
-1. User provides a session ID
-2. System:
-   - Retrieves detailed analysis
-   - Uses concise description for valuation
-   - Calls valuation agent API
-   - Stores results in session folder
-3. Returns:
-   ```typescript
-   {
-     success: boolean;
-     message: string;
-     results: {
-       timestamp: number;
-       query: string;
-       value?: number;
-       explanation?: string;
-     }
-   }
-   ```
+### Monitoring Dashboard
+1. Visit the Cloud Run service in Google Cloud Console
+2. Navigate to the "Metrics" tab
+3. Monitor:
+   - Request count
+   - Response latency
+   - Container instance count
+   - Memory utilization
 
-#### 9. API Documentation (`GET /api/health/endpoints`)
-1. User requests API documentation
-2. System provides:
-   - Complete endpoint listing
-   - Required parameters
-   - Response formats
-   - Service version information
+## Contributing Guidelines
 
-### Image Upload
-```http
-POST /upload-temp
-Content-Type: multipart/form-data
+1. Fork the repository
+2. Create a feature branch
+3. Follow the existing code style
+4. Add tests for new functionality
+5. Update documentation
+6. Submit a pull request
 
+### Code Style
+- Use ESLint configuration
+- Follow Node.js best practices
+- Document all functions and modules
+- Include error handling
+- Add appropriate logging
+
+## License and Support
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+For support:
+1. Check existing issues
+2. Create a new issue with:
+   - Clear description
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment details
+
+## Health Check Endpoint
+
+The service exposes a health check endpoint at \`/api/health/status\` that returns:
+
+\`\`\`json
 {
-  "image": <file>
-}
-```
-- Supports JPEG, PNG, WebP formats
-- 10MB file size limit
-- Returns session ID and image URL
-- Creates session storage structure
-
-### Session Data
-```http
-GET /session/{sessionId}
-
-Response: {
-  "success": boolean,
-  "session": {
-    "id": string,
-    "metadata": {
-      "originalName": string,
-      "timestamp": number,
-      "analyzed": boolean,
-      "mimeType": string,
-      "size": number,
-      "imageUrl": string
-    },
-    "analysis": object | null,
-    "origin": object | null
+  "status": "healthy",
+  "uptime": 123456,
+  "timestamp": "2024-01-01T00:00:00Z",
+  "services": {
+    "storage": true,
+    "vision": true,
+    "pubsub": true
   }
 }
-```
+\`\`\`
 
-### Visual Analysis
-```http
-POST /visual-search
-Content-Type: application/json
-
-{
-  "sessionId": "uuid"
-}
-
-Response: {
-  "success": boolean,
-  "message": string,
-  "results": {
-    "vision": {
-      "webEntities": Array<Entity>,
-      "description": {
-        "labels": string[],
-        "confidence": number
-      },
-      "matches": {
-        "exact": Array<Match>,
-        "partial": Array<Match>,
-        "similar": Array<Match>
-      }
-    },
-    "openai": {
-      "category": "Art" | "Antique",
-      "description": string
-    }
-  }
-}
-```
-
-### Origin Analysis
-```http
-POST /origin-analysis
-Content-Type: application/json
-
-{
-  "sessionId": "uuid"
-}
-
-Response: {
-  "success": boolean,
-  "message": string,
-  "results": {
-    "timestamp": number,
-    "matches": {
-      "exact": Array<Match>,
-      "partial": Array<Match>,
-      "similar": Array<Match>
-    },
-    "originAnalysis": {
-      "originality": "original" | "reproduction",
-      "confidence": number,
-      "style_analysis": string,
-      "unique_characteristics": string[],
-      "comparison_notes": string,
-      "recommendation": string
-    }
-  }
-}
-```
-
-### Full Analysis
-```http
-POST /full-analysis
-Content-Type: application/json
-
-{
-  "sessionId": "uuid"
-}
-
-Response: {
-  "success": boolean,
-  "message": string,
-  "results": {
-    "metadata": object,
-    "detailedAnalysis": {
-      "concise_description": string,  // 5-word item description
-      "maker_analysis": {
-        "creator_name": string,
-        "reasoning": string
-      },
-      "signature_check": {
-        "signature_text": string,
-        "interpretation": string
-      },
-      "origin_analysis": {
-        "likely_origin": string,
-        "reasoning": string
-      },
-      "marks_recognition": {
-        "marks_identified": string,
-        "interpretation": string
-      },
-      "age_analysis": {
-        "estimated_date_range": string,
-        "reasoning": string
-      },
-      "visual_search": {
-        "similar_artworks": string,
-        "notes": string
-      }
-    }
-  }
-}
-```
-
-## Event Publishing
-
-The service publishes events to Google Cloud Pub/Sub using a pull subscription model for the following scenarios:
-
-### CRM Notification
-Topic: `CRM-tasks`
-```json
-{
-  "crmProcess": "screenerNotification",
-  "customer": {
-    "email": "string",
-    "name": null
-  },
-  "sessionId": "string",
-  "metadata": {
-    "originalName": "string",
-    "imageUrl": "string",
-    "mimeType": "string",
-    "size": "number",
-    "timestamp": "number",
-    "analyzed": false,
-    "originAnalyzed": false
-  },
-  "timestamp": "number",
-  "origin": "screener"
-}
-```
-
-This message is published when a user submits their email for analysis results. The following steps must be completed before the message is published:
-1. All required analyses (visual, origin, and detailed) are completed
-2. HTML report is generated and saved
-3. Session metadata is updated with email submission details
-
-## Required Environment Variables
-
-The following secrets must be configured in Google Cloud Secret Manager:
-- `GOOGLE_CLOUD_PROJECT_ID`
-- `GCS_BUCKET_NAME`
-- `OPENAI_API_KEY`
-- `SERVICE_ACCOUNT_JSON`
-- `PUBSUB_TOPIC_ANALYSIS_COMPLETE`
-
-## Development
-
-### Local Development
-
-1. Set up Google Cloud project and enable required APIs
-2. Configure secrets in Google Cloud Secret Manager
-3. Install dependencies:
-```bash
-npm install
-```
-
-4. Start the server:
-```bash
-npm start
-```
-
-The server will start on port 8080 by default.
-
-### Project Structure
-
-The project now follows a feature-based structure for better organization:
-
-```
-src/
-  ├── features/
-  │   └── visualSearch/           # Visual search feature module
-  │       ├── controllers/        # Request handlers
-  │       ├── routes/            # Route definitions
-  │       └── utils/             # Feature-specific utilities
-  ├── services/                  # Shared services
-  ├── middleware/                # Global middleware
-  └── config/                    # Configuration files
-```
-
-## Docker Support
-
-Build and run using Docker:
-
-```bash
-docker build -t art-analysis-backend .
-docker run -p 8080:8080 art-analysis-backend
-```
+This endpoint is called every 30 minutes by Cloud Scheduler to keep the service active and monitor its health.
