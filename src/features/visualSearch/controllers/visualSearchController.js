@@ -92,7 +92,6 @@ async function processVisualSearch(req, res) {
     };
 
     // Save analysis results
-    const bucket = cloudServices.getBucket();
     const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
     const analysisString = JSON.stringify(analysisResults, null, 2);
     await analysisFile.save(analysisString, {
