@@ -174,19 +174,25 @@ router.post('/submit-email', limiter, async (req, res) => {
     }
 
     // Prepare message for CRM
+    const timestamp = Date.now();
     const message = {
       crmProcess: "screenerNotification",
       customer: {
-        email: email
+        email: email,
+        name: null
       },
+      origin: "screener",
+      timestamp: timestamp,
       sessionId: sessionId,
       metadata: {
         originalName: metadata.originalName,
         imageUrl: metadata.imageUrl,
-        mimeType: metadata.mimeType,
-        size: metadata.size
-      },
-      timestamp: Date.now()
+        timestamp: timestamp,
+        analyzed: metadata.analyzed || false,
+        originAnalyzed: metadata.originAnalyzed || false,
+        size: metadata.size,
+        mimeType: metadata.mimeType
+      }
     };
 
     // Publish to CRM-tasks topic
