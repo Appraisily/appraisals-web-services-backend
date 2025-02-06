@@ -3,8 +3,8 @@ const openai = require('../../../services/openai');
 const sheetsService = require('../../../services/sheets');
 const { formatVisionResults } = require('../utils/formatters');
 const { updateMetadata } = require('../utils/metadataHandler');
-const { validateSession } = require('../utils/validators');
 const { downloadAndStoreSimilarImages } = require('../utils/imageDownloader');
+const mime = require('mime-types');
 
 module.exports = { processVisualSearch };
 
@@ -21,8 +21,34 @@ async function processVisualSearch(req, res) {
 
     console.log(`Processing visual search for session ID: ${sessionId}`);
 
-    // Validate session and get metadata
-    const { metadata, imageFile } = await validateSession(sessionId);
+    // Get session metadata
+    const bucket = cloudServices.getBucket();
+    const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
+    const [metadataExists] = await metadataFile.exists();
+
+    if (!metadataExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found.'
+      });
+    }
+
+    // Load metadata
+    const [metadataContent] = await metadataFile.download();
+    const metadata = JSON.parse(metadataContent.toString());
+
+    // Verify image exists
+    const fileExtension = mime.extension(metadata.mimeType);
+    const imageFileName = `sessions/${sessionId}/UserUploadedImage.${fileExtension}`;
+    const imageFile = bucket.file(imageFileName);
+    const [imageExists] = await imageFile.exists();
+
+    if (!imageExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found.'
+      });
+    }
 
     console.log('Initiating Google Vision web detection...');
     console.log('Initiating OpenAI Vision analysis...');

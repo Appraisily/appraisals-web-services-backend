@@ -49,14 +49,16 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 ### Image Analysis
 - Dual analysis system using Google Cloud Vision and OpenAI Vision
 - Origin analysis for artwork authenticity
-- Visual similarity search with parallel API processing
+- Visual similarity search with parallel API processing and local storage
 - Comprehensive image metadata extraction
+- Concise 5-word descriptions for quick item identification
 
 ### Storage & Data Management
 - Session-based file organization
 - Automatic file cleanup
 - Structured JSON storage for analysis results
 - Metadata tracking for all uploads
+- Similar image storage and management
 
 ### Cloud Integration
 - Google Cloud Storage for file management
@@ -355,6 +357,7 @@ Response: {
   "results": {
     "metadata": object,
     "detailedAnalysis": {
+      "concise_description": string,  // 5-word item description
       "maker_analysis": {
         "creator_name": string,
         "reasoning": string
@@ -386,7 +389,7 @@ Response: {
 
 ## Event Publishing
 
-The service publishes events to Google Cloud Pub/Sub for the following scenarios:
+The service publishes events to Google Cloud Pub/Sub using a pull subscription model for the following scenarios:
 
 ### CRM Notification
 Topic: `CRM-tasks`
@@ -394,16 +397,21 @@ Topic: `CRM-tasks`
 {
   "crmProcess": "screenerNotification",
   "customer": {
-    "email": "string"
+    "email": "string",
+    "name": null
   },
   "sessionId": "string",
   "metadata": {
     "originalName": "string",
     "imageUrl": "string",
     "mimeType": "string",
-    "size": "number"
+    "size": "number",
+    "timestamp": "number",
+    "analyzed": false,
+    "originAnalyzed": false
   },
-  "timestamp": "number"
+  "timestamp": "number",
+  "origin": "screener"
 }
 ```
 
@@ -423,7 +431,7 @@ The following secrets must be configured in Google Cloud Secret Manager:
 
 ## Development
 
-To run locally:
+### Local Development
 
 1. Set up Google Cloud project and enable required APIs
 2. Configure secrets in Google Cloud Secret Manager
@@ -438,6 +446,22 @@ npm start
 ```
 
 The server will start on port 8080 by default.
+
+### Project Structure
+
+The project now follows a feature-based structure for better organization:
+
+```
+src/
+  ├── features/
+  │   └── visualSearch/           # Visual search feature module
+  │       ├── controllers/        # Request handlers
+  │       ├── routes/            # Route definitions
+  │       └── utils/             # Feature-specific utilities
+  ├── services/                  # Shared services
+  ├── middleware/                # Global middleware
+  └── config/                    # Configuration files
+```
 
 ## Docker Support
 

@@ -45,7 +45,6 @@ router.post('/submit-email', limiter, async (req, res) => {
     }
 
     // Get session metadata
-    console.log('Checking session and analysis files...');
     const bucket = cloudServices.getBucket();
     const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
     const [exists] = await metadataFile.exists();
@@ -56,6 +55,16 @@ router.post('/submit-email', limiter, async (req, res) => {
         message: 'Session not found.'
       });
     }
+
+    // Send immediate success response to client
+    res.json({
+      success: true,
+      message: 'Email submission received and processing started.',
+      submissionTime: Date.now()
+    });
+
+    // Continue with async processing
+    console.log('Checking session and analysis files...');
 
     // Load metadata
     const [metadataContent] = await metadataFile.download();
@@ -224,23 +233,21 @@ router.post('/submit-email', limiter, async (req, res) => {
     console.log('✓ Session metadata updated with email submission');
     console.log('=== Email Submission Process Complete ===\n');
 
-    // Send success response
-    res.json({
-      success: true,
-      message: 'Email submission received and queued for processing.',
-      submissionTime: message.timestamp
-    });
-
   } catch (error) {
     console.error('\n✗ Email submission error:', error);
     console.error('Stack trace:', error.stack);
     console.log('=== Email Submission Process Failed ===\n');
     
-    res.status(500).json({
-      success: false,
-      message: 'Error processing email submission.',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
-    });
+    // Only send error response if we haven't sent the success response yet
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Error processing email submission.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+      });
+    } else {
+      console.error('Error occurred after sending success response to client');
+    }
   }
 });
 
