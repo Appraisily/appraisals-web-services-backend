@@ -28,3 +28,5 @@ async function validateSession(sessionId) {
 
   return { metadata, imageFile };
 }
+
+module.exports = { validateSession };

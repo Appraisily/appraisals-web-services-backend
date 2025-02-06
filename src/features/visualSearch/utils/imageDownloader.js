@@ -54,3 +54,4 @@ exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages)
   
   console.log(`\nCompleted processing ${results.length} similar images`);
   return results;
+}
