@@ -44,6 +44,20 @@ router.post('/full-analysis', async (req, res) => {
       console.log('Loading existing detailed analysis from GCS...');
       const [detailedAnalysisContent] = await detailedAnalysisFile.download();
       detailedAnalysis = JSON.parse(detailedAnalysisContent.toString());
+
+      // Ensure concise_description exists in existing analysis
+      if (!detailedAnalysis.concise_description) {
+        console.log('Existing analysis missing concise_description, triggering new analysis...');
+        detailedAnalysis = await openai.analyzeWithFullPrompt(metadata.imageUrl);
+        
+        // Save updated analysis
+        await detailedAnalysisFile.save(JSON.stringify(detailedAnalysis, null, 2), {
+          contentType: 'application/json',
+          metadata: {
+            cacheControl: 'no-cache'
+          }
+        });
+      }
     } else {
       // Perform new detailed AI analysis
       console.log('Starting new detailed AI analysis...');

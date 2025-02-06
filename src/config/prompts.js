@@ -62,6 +62,7 @@ You will receive an image of an artwork, antique, or collectible. Please analyze
 Your final output must be valid JSON **only**, with no additional commentary. The top-level JSON structure must follow exactly:
 
 {
+  "concise_description": "",
   "maker_analysis": {
     "creator_name": "",
     "reasoning": ""
@@ -116,8 +117,16 @@ Where each field should be completed as follows:
 
 IMPORTANT:
 - Output MUST be valid JSON, with **no** extra text outside the braces.
-- The JSON must have all six keys above: maker_analysis, signature_check, origin_analysis, marks_recognition, age_analysis, and visual_search.
+- The JSON must have all seven keys above: concise_description, maker_analysis, signature_check, origin_analysis, marks_recognition, age_analysis, and visual_search.
 - Do not include any additional keys beyond these.
+
+For the concise_description field:
+- Provide exactly 5 words that best represent the item
+- For artwork: Include artist name (if known) and key attributes (e.g., "Monet Impressionist Original Oil Painting")
+- For antiques: Include era, material, and key features (e.g., "Victorian Mahogany Carved Dining Chair")
+- Use proper capitalization for each word
+- No punctuation between words
+- If artist name has two words, count it as two words (e.g., "Claude Monet Original Oil Painting")
 `;
 
 const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.

@@ -26,8 +26,29 @@ class PubSubService {
 
     try {
       const topic = this.pubsub.topic(this.topicName);
-      const messageBuffer = Buffer.from(JSON.stringify(data));
       
+      // Format message according to CRM service requirements
+      const message = {
+        crmProcess: "screenerNotification",
+        customer: {
+          email: data.email,
+          name: null // Optional field, defaulting to null
+        },
+        sessionId: data.sessionId,
+        metadata: {
+          originalName: data.metadata.originalName,
+          imageUrl: data.metadata.imageUrl,
+          timestamp: Date.now(),
+          analyzed: false,
+          originAnalyzed: false,
+          size: data.metadata.size,
+          mimeType: data.metadata.mimeType
+        },
+        timestamp: Date.now(),
+        origin: "screener"
+      };
+
+      const messageBuffer = Buffer.from(JSON.stringify(message));
       const messageId = await topic.publish(messageBuffer);
       console.log(`Message ${messageId} published to ${this.topicName}`);
       
