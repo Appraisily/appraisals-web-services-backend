@@ -1,14 +1,36 @@
 const fetch = require('node-fetch');
 const cloudServices = require('../../../services/storage');
 
+const TIMEOUT_MS = 5000; // 5 second timeout
+
 async function downloadImage(url) {
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    
+    const response = await fetch(url, { 
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'node-fetch/1.0 (+https://github.com/bitinn/node-fetch)'
+      }
+    });
+    
+    clearTimeout(timeout);
+    
     if (!response.ok) {
       throw new Error(`Failed to download image: ${response.statusText}`);
     }
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new Error('Invalid content type: ' + contentType);
+    }
+    
     return response.buffer();
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Download timeout after ${TIMEOUT_MS}ms`);
+    }
     console.error(`Error downloading image from ${url}:`, error);
     throw error;
   }
@@ -18,10 +40,13 @@ exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages)
   const bucket = cloudServices.getBucket();
   const results = [];
   
+  // Limit to first 5 images
+  const imagesToProcess = similarImages.slice(0, 5);
+  
   console.log(`\nDownloading similar images for session ${sessionId}...`);
   
-  for (let i = 0; i < similarImages.length; i++) {
-    const image = similarImages[i];
+  for (let i = 0; i < imagesToProcess.length; i++) {
+    const image = imagesToProcess[i];
     const imageNumber = i + 1;
     const fileName = `sessions/${sessionId}/similar-image${imageNumber}.jpg`;
     
@@ -48,6 +73,7 @@ exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages)
       });
     } catch (error) {
       console.error(`Failed to process image ${imageNumber}:`, error);
+      console.log(`Skipping image ${imageNumber} and continuing with next...`);
       // Continue with next image
     }
   }

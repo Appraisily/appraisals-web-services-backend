@@ -131,17 +131,184 @@ For the concise_description field:
 
 const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.
 
-Use only these HTML tags:
+The following JSON data is provided:
+{
+  "visualAnalysis": {
+    "vision": {
+      "webEntities": [...],
+      "description": { "labels": [...], "confidence": number },
+      "matches": { "exact": [...], "partial": [...], "similar": [...] }
+    },
+    "openai": {
+      "category": string,
+      "description": string
+    }
+  },
+  "originAnalysis": {
+    "originAnalysis": {
+      "originality": string,
+      "confidence": number,
+      "style_analysis": string,
+      "unique_characteristics": string[],
+      "estimated_era": string,
+      "estimated_origin": string,
+      "material_or_medium": string,
+      "comparison_notes": string,
+      "recommendation": string
+    }
+  },
+  "detailedAnalysis": {
+    "concise_description": string,
+    "maker_analysis": {
+      "creator_name": string,
+      "reasoning": string
+    },
+    "signature_check": {
+      "signature_text": string,
+      "interpretation": string
+    },
+    "origin_analysis": {
+      "likely_origin": string,
+      "reasoning": string
+    },
+    "marks_recognition": {
+      "marks_identified": string,
+      "interpretation": string
+    },
+    "age_analysis": {
+      "estimated_date_range": string,
+      "reasoning": string
+    },
+    "visual_search": {
+      "similar_artworks": string,
+      "notes": string
+    }
+  }
+}
+
+Use the following HTML tags for formatting:
+- <h1>, <h2>, <h3>, <h4> for headings and sections
 - <p> for paragraphs
-- <b> for bold text
+- <b> or <strong> for bold text
+- <i> or <em> for emphasis
 - <br> for line breaks
+- <ul> and <li> for bullet points
+- <img> for displaying images (use src attribute with the provided URLs)
+- <div> for grouping content
+- <span> for inline styling
+- <table>, <tr>, <th>, <td> for tabular data and JSON display
+- <pre> for formatted JSON content
 
 Format the report to include:
-1. Visual Analysis Summary
-2. Origin Analysis Details
-3. Full Analysis Findings
+1. Header Section
+   - Main item image
+   - Display detailedAnalysis.concise_description
+   - Show the raw JSON:
+     <h4>Raw Description Data</h4>
+     <pre>
+     {
+       "concise_description": "[value from detailedAnalysis.concise_description]"
+     }
+     </pre>
 
-Keep the formatting clean and professional. Do not include any styling or other HTML tags. Do not include references to AI or OpenAI`;
+2. Visual Analysis Summary
+   - Similar images grid
+   - Category and description
+   - Web entities and labels
+   - Show the raw JSON:
+     <h4>Visual Analysis Data</h4>
+     <pre>
+     {
+       "vision": {
+         "webEntities": [...],
+         "description": { "labels": [...], "confidence": number }
+       },
+       "openai": {
+         "category": "[value]",
+         "description": "[value]"
+       }
+     }
+     </pre>
+
+3. Origin Analysis Details
+   - Comparison images
+   - Originality assessment
+   - Style analysis
+   - Show the raw JSON:
+     <h4>Origin Analysis Data</h4>
+     <pre>
+     {
+       "originality": "[value]",
+       "confidence": number,
+       "style_analysis": "[value]",
+       "unique_characteristics": [...],
+       "estimated_era": "[value]",
+       "estimated_origin": "[value]",
+       "material_or_medium": "[value]",
+       "comparison_notes": "[value]"
+     }
+     </pre>
+
+4. Full Analysis Findings
+   - Detailed breakdown of each category
+   - Supporting evidence and observations
+   - Show the raw JSON:
+     <h4>Full Analysis Data</h4>
+     <pre>
+     {
+       "maker_analysis": {
+         "creator_name": "[value]",
+         "reasoning": "[value]"
+       },
+       "signature_check": {
+         "signature_text": "[value]",
+         "interpretation": "[value]"
+       },
+       "origin_analysis": {
+         "likely_origin": "[value]",
+         "reasoning": "[value]"
+       },
+       "marks_recognition": {
+         "marks_identified": "[value]",
+         "interpretation": "[value]"
+       },
+       "age_analysis": {
+         "estimated_date_range": "[value]",
+         "reasoning": "[value]"
+       },
+       "visual_search": {
+         "similar_artworks": "[value]",
+         "notes": "[value]"
+       }
+     }
+     </pre>
+
+5. Professional Recommendation
+   - Final assessment
+   - Next steps
+   - Show the raw JSON:
+     <h4>Recommendation Data</h4>
+     <pre>
+     {
+       "recommendation": "[value from originAnalysis.originAnalysis.recommendation]"
+     }
+     </pre>
+
+Keep the formatting clean and professional. Do not include any styling attributes or other HTML tags. Do not include references to AI or OpenAI.
+
+For images:
+- Display the main item image prominently at the top
+- Include relevant similar images in the visual analysis section
+- Show comparison images in a grid layout when discussing similarities
+- Use the stored image URLs provided in the analysis data
+
+For JSON display:
+- Use <pre> tags to maintain formatting
+- Include a small heading above each JSON section (h4)
+- Format the JSON with proper indentation (2 spaces)
+- Replace the [value] placeholders with actual values from the provided data
+- Keep array values as [...] for brevity unless specifically relevant
+- Include all fields shown in the templates above`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
