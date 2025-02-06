@@ -1,7 +1,7 @@
 /**
  * Formats the results from Google Vision API web detection
  */
-function formatVisionResults(webDetection) {
+exports.formatVisionResults = function(webDetection) {
   return {
     webEntities: (webDetection.webEntities || []).map(entity => ({
       entityId: entity.entityId,
@@ -45,4 +45,4 @@ function formatVisionResults(webDetection) {
       languages: label.languages || []
     }))
   };
-}
+};

@@ -14,7 +14,7 @@ async function downloadImage(url) {
   }
 }
 
-async function downloadAndStoreSimilarImages(sessionId, similarImages) {
+exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages) {
   const bucket = cloudServices.getBucket();
   const results = [];
   
@@ -54,4 +54,3 @@ async function downloadAndStoreSimilarImages(sessionId, similarImages) {
   
   console.log(`\nCompleted processing ${results.length} similar images`);
   return results;
-}

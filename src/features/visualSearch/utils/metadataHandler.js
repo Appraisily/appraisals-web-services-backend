@@ -1,6 +1,6 @@
 const cloudServices = require('../../../services/storage');
 
-async function updateMetadata(sessionId, metadata, formattedResults, openaiAnalysis) {
+exports.updateMetadata = async function(sessionId, metadata, formattedResults, openaiAnalysis) {
   const bucket = cloudServices.getBucket();
   const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
 
@@ -33,4 +33,3 @@ async function updateMetadata(sessionId, metadata, formattedResults, openaiAnaly
   });
 
   return updatedMetadata;
-}

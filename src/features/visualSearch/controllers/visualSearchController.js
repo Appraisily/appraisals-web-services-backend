@@ -1,9 +1,9 @@
 const cloudServices = require('../../../services/storage');
 const openai = require('../../../services/openai');
 const sheetsService = require('../../../services/sheets');
-const { formatVisionResults } = require('../utils/formatters');
-const { updateMetadata } = require('../utils/metadataHandler');
-const { downloadAndStoreSimilarImages } = require('../utils/imageDownloader');
+const formatters = require('../utils/formatters');
+const metadataHandler = require('../utils/metadataHandler');
+const imageDownloader = require('../utils/imageDownloader');
 const mime = require('mime-types');
 
 module.exports = { processVisualSearch };
@@ -71,12 +71,12 @@ async function processVisualSearch(req, res) {
     ]);
 
     const webDetection = visionResult[0].webDetection;
-    const formattedResults = formatVisionResults(webDetection);
+    const formattedResults = formatters.formatVisionResults(webDetection);
 
     // Download and store similar images
     console.log('\nProcessing similar images...');
     const similarImages = formattedResults.matches.similar;
-    const storedImages = await downloadAndStoreSimilarImages(sessionId, similarImages);
+    const storedImages = await imageDownloader.downloadAndStoreSimilarImages(sessionId, similarImages);
     
     // Add stored image information to the results
     formattedResults.matches.similar = formattedResults.matches.similar.map((img, index) => ({
@@ -122,7 +122,7 @@ async function processVisualSearch(req, res) {
     console.log(`Analysis results saved successfully to sessions/${sessionId}/analysis.json`);
 
     // Update metadata
-    const updatedMetadata = await updateMetadata(sessionId, metadata, formattedResults, openaiAnalysis);
+    const updatedMetadata = await metadataHandler.updateMetadata(sessionId, metadata, formattedResults, openaiAnalysis);
 
     console.log('Web detection completed successfully');
     console.log(`Analysis results:
