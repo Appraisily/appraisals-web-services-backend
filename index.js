@@ -10,6 +10,7 @@ const sessionRouter = require('./src/routes/session');
 const emailRouter = require('./src/routes/email');
 const originAnalysisRouter = require('./src/routes/originAnalysis');
 const fullAnalysisRouter = require('./src/routes/fullAnalysis');
+const findValueRouter = require('./src/routes/findValue');
 const healthRouter = require('./src/routes/health');
 
 const app = express();
@@ -28,6 +29,7 @@ app.use(visualSearchRouter);
 app.use(emailRouter);
 app.use(originAnalysisRouter);
 app.use(fullAnalysisRouter);
+app.use(findValueRouter);
 app.use('/api/health', healthRouter);
 
 // Initialize application
