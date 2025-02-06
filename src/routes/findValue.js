@@ -58,27 +58,37 @@ router.post('/find-value', async (req, res) => {
     const valueData = await response.json();
 
     // Save value estimation to session
+    console.log('Saving value estimation results to GCS...');
     const valueFile = bucket.file(`sessions/${sessionId}/value.json`);
-    await valueFile.save(JSON.stringify({
+    const valueResults = {
       timestamp: Date.now(),
       query: detailedAnalysis.concise_description,
       ...valueData
-    }, null, 2), {
+    };
+    
+    await valueFile.save(JSON.stringify(valueResults, null, 2), {
       contentType: 'application/json',
       metadata: {
         cacheControl: 'no-cache'
       }
     });
 
+    // Verify the file was saved
+    const [exists] = await valueFile.exists();
+    if (!exists) {
+      throw new Error('Failed to save value estimation results');
+    }
+    console.log('✓ Value estimation results saved successfully');
+
     res.json({
       success: true,
       message: 'Value estimation completed successfully.',
-      query: detailedAnalysis.concise_description,
-      ...valueData
+      results: valueResults
     });
 
   } catch (error) {
-    console.error('Error processing value estimation:', error);
+    console.error('\n✗ Error processing value estimation:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Error processing value estimation.',

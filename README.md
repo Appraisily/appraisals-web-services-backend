@@ -31,6 +31,7 @@ The service communicates with other components through Google Cloud Pub/Sub for 
     │   ├── fullAnalysis.js  # Complete artwork analysis
     │   ├── health.js        # Health check endpoints
     │   ├── originAnalysis.js # Origin determination
+    │   ├── findValue.js     # Value estimation
     │   ├── session.js       # Session management
     │   ├── upload.js        # File upload handling
     │   └── visualSearch.js  # Visual search processing
@@ -50,6 +51,7 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 - Dual analysis system using Google Cloud Vision and OpenAI Vision
 - Origin analysis for artwork authenticity
 - Visual similarity search with parallel API processing and local storage
+- Value estimation using AI-powered valuation model
 - Comprehensive image metadata extraction
 - Concise 5-word descriptions for quick item identification
 
@@ -59,6 +61,7 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 - Structured JSON storage for analysis results
 - Metadata tracking for all uploads
 - Similar image storage and management
+- Value estimation results storage
 
 ### Cloud Integration
 - Google Cloud Storage for file management
@@ -83,6 +86,7 @@ Handles the initial image upload and creates a new analysis session.
    - Generates unique session ID (UUID)
    - Creates session folder in Google Cloud Storage
    - Standardizes image filename: `UserUploadedImage.[ext]`
+   - Creates session folder structure
 
 3. **Metadata Generation**
    ```json
@@ -102,7 +106,12 @@ Handles the initial image upload and creates a new analysis session.
      ```
      sessions/{sessionId}/
      ├── UserUploadedImage.[ext]
-     └── metadata.json
+     ├── metadata.json
+     ├── analysis.json      # Visual analysis results
+     ├── origin.json       # Origin analysis results
+     ├── detailed.json     # Detailed analysis results
+     ├── value.json       # Value estimation results
+     └── report.html      # Generated HTML report
      ```
    - Uploads image with public caching (3600s)
    - Saves metadata with no-cache setting
@@ -234,7 +243,28 @@ Handles the initial image upload and creates a new analysis session.
    - Uptime information
    - Component status details
 
-#### 8. API Documentation (`GET /api/health/endpoints`)
+#### 8. Value Estimation (`POST /find-value`)
+1. User provides a session ID
+2. System:
+   - Retrieves detailed analysis
+   - Uses concise description for valuation
+   - Calls valuation agent API
+   - Stores results in session folder
+3. Returns:
+   ```typescript
+   {
+     success: boolean;
+     message: string;
+     results: {
+       timestamp: number;
+       query: string;
+       value?: number;
+       explanation?: string;
+     }
+   }
+   ```
+
+#### 9. API Documentation (`GET /api/health/endpoints`)
 1. User requests API documentation
 2. System provides:
    - Complete endpoint listing
