@@ -33,3 +33,4 @@ exports.updateMetadata = async function(sessionId, metadata, formattedResults, o
   });
 
   return updatedMetadata;
+};
