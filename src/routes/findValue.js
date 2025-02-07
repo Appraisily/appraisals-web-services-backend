@@ -63,17 +63,22 @@ router.post('/find-value', async (req, res) => {
     const valueResults = {
       timestamp: Date.now(),
       query: detailedAnalysis.concise_description,
-      success: valueData.success,
-      minValue: valueData.minValue,
-      maxValue: valueData.maxValue,
-      mostLikelyValue: valueData.mostLikelyValue,
-      explanation: valueData.explanation
+      ...valueData,  // Include all fields from the response
+      auctionResults: valueData.auctionResults.map(result => ({
+        title: result.title,
+        price: result.price,
+        currency: result.currency,
+        house: result.house,
+        date: result.date,
+        description: result.description
+      }))
     };
     
     await valueFile.save(JSON.stringify(valueResults, null, 2), {
       contentType: 'application/json',
       metadata: {
-        cacheControl: 'no-cache'
+        cacheControl: 'no-cache',
+        contentEncoding: 'gzip'  // Enable compression for larger responses
       }
     });
 
@@ -82,12 +87,15 @@ router.post('/find-value', async (req, res) => {
     if (!exists) {
       throw new Error('Failed to save value estimation results');
     }
-    console.log('✓ Value estimation results saved successfully');
+    console.log(`✓ Value estimation results saved successfully with ${valueResults.auctionResults.length} auction results`);
 
     res.json({
       success: true,
       message: 'Value estimation completed successfully.',
-      results: valueResults
+      results: {
+        ...valueResults,
+        auctionResultsCount: valueResults.auctionResults.length
+      }
     });
 
   } catch (error) {
