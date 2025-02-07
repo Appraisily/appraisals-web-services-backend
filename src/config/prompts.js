@@ -131,7 +131,7 @@ For the concise_description field:
 
 const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.
 
-You will get three JSONs, each of them will correspond to a section of the report.
+You will get four JSONs, each of them will correspond to a section of the report.
 
 Use the following HTML tags for formatting:
 - <h1>, <h2>, <h3>, <h4> for headings and sections
@@ -147,10 +147,13 @@ Use the following HTML tags for formatting:
 - <pre> for formatted JSON content
 
 Format the report to include:
+
+
 1. Header Section
    - Main item image
    - Display detailedAnalysis.concise_description 
    - Mention the sessionID if present.
+   - Include valuation data, showing value range, most likely value and results from auction houses.
    
 2. Visual Analysis Summary
    - Similar images grid (you need to use storedUrl values in the img tags)
@@ -170,6 +173,12 @@ Format the report to include:
 4. Full Analysis Findings
    - Detailed breakdown of each category
    - Supporting evidence and observations
+
+5. Value Analysis
+   - Estimated value range
+   - Most likely value
+   - Similar auction results
+   - Value explanation
    
 
 Keep the formatting clean and professional. Do not include any styling attributes or other HTML tags. Do not include references to AI or OpenAI. Feel free to chang what you consider apropiate, if any data is missing, you can skip it in the final html.

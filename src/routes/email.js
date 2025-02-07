@@ -154,6 +154,36 @@ router.post('/submit-email', limiter, async (req, res) => {
     if (!finalDetailedExists) {
       throw new Error('Failed to complete detailed analysis');
     }
+
+    // Check for value analysis
+    console.log('\nChecking for value analysis...');
+    const valueFile = bucket.file(`sessions/${sessionId}/value.json`);
+    const [valueExists] = await valueFile.exists();
+
+    if (!valueExists) {
+      console.log('Value analysis missing, triggering analysis...');
+      try {
+        const response = await fetch(`${baseUrl}/find-value`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Value analysis failed with status ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to perform value analysis:', error);
+        throw new Error('Failed to complete required value analysis');
+      }
+
+      // Verify value analysis is now complete
+      const [finalValueExists] = await bucket.file(`sessions/${sessionId}/value.json`).exists();
+      if (!finalValueExists) {
+        throw new Error('Failed to complete value analysis');
+      }
+      console.log('✓ Value analysis completed');
+    }
     
     // Generate HTML report
     console.log('\nGenerating HTML report...');

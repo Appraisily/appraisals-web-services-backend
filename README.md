@@ -48,6 +48,107 @@ The service communicates with other components through Google Cloud Pub/Sub for 
 - Google Cloud Pub/Sub for event publishing
 - Cloud Scheduler for health monitoring
 
+## API Endpoints
+
+### File Management
+
+#### `POST /upload-temp`
+Handles initial image upload for analysis.
+- **Input**: Multipart form data with `image` field
+- **Output**: 
+  ```json
+  {
+    "success": true,
+    "message": "Image uploaded successfully.",
+    "imageUrl": "https://storage.../image.jpg",
+    "sessionId": "uuid"
+  }
+  ```
+
+### Analysis Endpoints
+
+#### `POST /visual-search`
+Performs visual analysis using Google Vision and OpenAI.
+- **Input**: `{ "sessionId": "uuid" }`
+- **Output**: Vision API results and OpenAI analysis
+
+#### `POST /origin-analysis`
+Analyzes artwork origin and authenticity.
+- **Input**: `{ "sessionId": "uuid" }`
+- **Output**: Detailed origin analysis with style, era, and authenticity assessment
+
+#### `POST /full-analysis`
+Performs comprehensive artwork analysis.
+- **Input**: `{ "sessionId": "uuid" }`
+- **Output**: Complete analysis including maker, signature, marks, and age analysis
+
+#### `POST /find-value`
+Estimates artwork value based on analysis.
+- **Input**: `{ "sessionId": "uuid" }`
+- **Output**:
+  ```json
+  {
+    "success": true,
+    "results": {
+      "minValue": number,
+      "maxValue": number,
+      "mostLikelyValue": number,
+      "explanation": "string",
+      "auctionResults": [
+        {
+          "title": "string",
+          "price": number,
+          "currency": "string",
+          "house": "string",
+          "date": "string",
+          "description": "string"
+        }
+      ]
+    }
+  }
+  ```
+
+### Session Management
+
+#### `GET /session/:sessionId`
+Retrieves all session data and analysis results.
+- **Output**: Complete session data including metadata and all analyses
+
+### Email Handling
+
+#### `POST /submit-email`
+Submits email for analysis report delivery.
+- **Input**: 
+  ```json
+  {
+    "email": "user@example.com",
+    "sessionId": "uuid"
+  }
+  ```
+- **Output**: Confirmation of submission
+
+### Health Monitoring
+
+#### `GET /api/health/status`
+Checks service health status.
+- **Output**:
+  ```json
+  {
+    "status": "healthy|degraded",
+    "uptime": number,
+    "timestamp": "ISO string",
+    "services": {
+      "storage": boolean,
+      "vision": boolean,
+      "pubsub": boolean
+    }
+  }
+  ```
+
+#### `GET /api/health/endpoints`
+Lists all available API endpoints.
+- **Output**: Complete API documentation
+
 ## Repository Structure
 
 \`\`\`

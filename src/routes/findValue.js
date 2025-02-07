@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const cloudServices = require('../services/storage');
+const sheetsService = require('../services/sheets');
 
 const router = express.Router();
 
@@ -77,8 +78,7 @@ router.post('/find-value', async (req, res) => {
     await valueFile.save(JSON.stringify(valueResults, null, 2), {
       contentType: 'application/json',
       metadata: {
-        cacheControl: 'no-cache',
-        contentEncoding: 'gzip'  // Enable compression for larger responses
+        cacheControl: 'no-cache'
       }
     });
 
@@ -88,6 +88,27 @@ router.post('/find-value', async (req, res) => {
       throw new Error('Failed to save value estimation results');
     }
     console.log(`✓ Value estimation results saved successfully with ${valueResults.auctionResults.length} auction results`);
+
+    // Update Google Sheets
+    try {
+      const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+      if (rowIndex === -1) {
+        console.warn(`Session ID ${sessionId} not found in spreadsheet`);
+      } else {
+        await sheetsService.sheets.spreadsheets.values.update({
+          spreadsheetId: sheetsService.sheetsId,
+          range: `Sheet1!Q${rowIndex + 1}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Value Analysis Complete']]
+          }
+        });
+        console.log('✓ Value analysis status logged to sheets');
+      }
+    } catch (error) {
+      console.error('Failed to log value analysis to sheets:', error);
+      // Don't fail the request if sheets logging fails
+    }
 
     res.json({
       success: true,

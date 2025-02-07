@@ -63,18 +63,20 @@ class CloudServices {
     try {
       console.log(`Generating HTML report for session ${sessionId}...`);
       
-      // Load all analysis files
-      const [analysisContent, originContent, detailedContent] = await Promise.all([
+      // Load all analysis files including value analysis
+      const [analysisContent, originContent, detailedContent, valueContent] = await Promise.all([
         this.bucket.file(`sessions/${sessionId}/analysis.json`).download().then(([content]) => JSON.parse(content.toString())),
         this.bucket.file(`sessions/${sessionId}/origin.json`).download().then(([content]) => JSON.parse(content.toString())),
-        this.bucket.file(`sessions/${sessionId}/detailed.json`).download().then(([content]) => JSON.parse(content.toString()))
+        this.bucket.file(`sessions/${sessionId}/detailed.json`).download().then(([content]) => JSON.parse(content.toString())),
+        this.bucket.file(`sessions/${sessionId}/value.json`).download().then(([content]) => JSON.parse(content.toString()))
       ]);
 
       // Prepare data for OpenAI
       const reportData = {
         visualAnalysis: analysisContent,
         originAnalysis: originContent,
-        detailedAnalysis: detailedContent
+        detailedAnalysis: detailedContent,
+        valueAnalysis: valueContent
       };
 
       // Generate HTML report
