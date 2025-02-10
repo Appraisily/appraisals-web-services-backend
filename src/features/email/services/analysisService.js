@@ -5,6 +5,7 @@ class AnalysisService {
   async processRequiredAnalyses(sessionId, req) {
     const bucket = cloudServices.getBucket();
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    let analysisErrors = [];
 
     // Check required analyses
     const [analysisExists, originExists, detailedExists, valueExists] = await Promise.all([
@@ -16,26 +17,54 @@ class AnalysisService {
 
     // Process visual analysis if needed
     if (!analysisExists[0]) {
-      await this.triggerAnalysis(baseUrl, 'visual-search', sessionId);
-      await this.verifyAnalysisFile(bucket, sessionId, 'analysis.json');
+      try {
+        await this.triggerAnalysis(baseUrl, 'visual-search', sessionId);
+        await this.verifyAnalysisFile(bucket, sessionId, 'analysis.json');
+      } catch (error) {
+        console.error('Visual analysis failed:', error);
+        analysisErrors.push({ type: 'visual-search', error: error.message });
+      }
     }
 
     // Process origin analysis if needed
     if (!originExists[0]) {
-      await this.triggerAnalysis(baseUrl, 'origin-analysis', sessionId);
-      await this.verifyAnalysisFile(bucket, sessionId, 'origin.json');
+      try {
+        await this.triggerAnalysis(baseUrl, 'origin-analysis', sessionId);
+        await this.verifyAnalysisFile(bucket, sessionId, 'origin.json');
+      } catch (error) {
+        console.error('Origin analysis failed:', error);
+        analysisErrors.push({ type: 'origin-analysis', error: error.message });
+      }
     }
 
     // Process detailed analysis if needed
     if (!detailedExists[0]) {
-      await this.triggerAnalysis(baseUrl, 'full-analysis', sessionId);
-      await this.verifyAnalysisFile(bucket, sessionId, 'detailed.json');
+      try {
+        await this.triggerAnalysis(baseUrl, 'full-analysis', sessionId);
+        await this.verifyAnalysisFile(bucket, sessionId, 'detailed.json');
+      } catch (error) {
+        console.error('Detailed analysis failed:', error);
+        analysisErrors.push({ type: 'full-analysis', error: error.message });
+      }
     }
 
     // Process value analysis if needed
     if (!valueExists[0]) {
-      await this.triggerAnalysis(baseUrl, 'find-value', sessionId);
-      await this.verifyAnalysisFile(bucket, sessionId, 'value.json');
+      try {
+        await this.triggerAnalysis(baseUrl, 'find-value', sessionId);
+        await this.verifyAnalysisFile(bucket, sessionId, 'value.json');
+      } catch (error) {
+        console.error('Value analysis failed:', error);
+        analysisErrors.push({ type: 'find-value', error: error.message });
+      }
+    }
+
+    // Log analysis errors but don't throw
+    if (analysisErrors.length > 0) {
+      console.log('\nAnalysis Errors Summary:');
+      analysisErrors.forEach(({ type, error }) => {
+        console.log(`- ${type}: ${error}`);
+      });
     }
   }
 

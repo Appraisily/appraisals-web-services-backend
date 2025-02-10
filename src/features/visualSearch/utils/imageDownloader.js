@@ -45,9 +45,10 @@ exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages)
   
   console.log(`\nDownloading similar images for session ${sessionId}...`);
   
-  for (let i = 0; i < imagesToProcess.length; i++) {
+  let successfulDownloads = 0;
+  for (let i = 0; i < imagesToProcess.length && successfulDownloads < 5; i++) {
     const image = imagesToProcess[i];
-    const imageNumber = i + 1;
+    const imageNumber = successfulDownloads + 1;
     const fileName = `sessions/${sessionId}/similar-image${imageNumber}.jpg`;
     
     try {
@@ -71,6 +72,7 @@ exports.downloadAndStoreSimilarImages = async function(sessionId, similarImages)
         fileName,
         score: image.score
       });
+      successfulDownloads++;
     } catch (error) {
       console.error(`Failed to process image ${imageNumber}:`, error);
       console.log(`Skipping image ${imageNumber} and continuing with next...`);

@@ -139,21 +139,55 @@ router.post('/origin-analysis', async (req, res) => {
 
     // Extract similar images from the analysis
     console.log('Processing similar images...');
-    const allSimilarImages = analysis.vision?.matches?.similar || [];
-    console.log(`Found ${allSimilarImages.length} similar images`);
+    const allStoredImages = (analysis.vision?.matches?.similar || [])
+      .filter(img => img.storedImage?.storedUrl);
     
-    // Filter and validate similar image URLs before sending to OpenAI
-    console.log('\nFiltering and validating top 5 similar images...');
-    const topSimilarImages = allSimilarImages.slice(0, 5);
-    const validSimilarImages = await filterValidImageUrls(topSimilarImages);
-    console.log(`✓ Validated ${validSimilarImages.length} images out of ${topSimilarImages.length}`);
+    console.log('\nStored images available:');
+    allStoredImages.forEach((img, index) => {
+      console.log(`${index + 1}. ${img.storedImage.storedUrl} (score: ${img.score || 'N/A'})`);
+    });
+    
+    if (allStoredImages.length === 0) {
+      console.log('⚠️ No stored images found in analysis results');
+    }
+    
+    // Take up to 5 stored images
+    const storedSimilarImages = allStoredImages
+      .slice(0, 5)
+      .map(img => ({
+        url: img.storedImage.storedUrl,
+        score: img.score || 0.3
+      }));
+    
+    console.log(`\nUsing ${storedSimilarImages.length} stored images for analysis`);
+    storedSimilarImages.forEach((img, index) => {
+      console.log(`${index + 1}. ${img.url} (score: ${img.score})`);
+    });
 
     // Call OpenAI with the user's image and similar images
     console.log('\nCalling OpenAI for origin analysis...');
-    const originAnalysis = await openai.analyzeOrigin(
-      metadata.imageUrl,
-      validSimilarImages
-    );
+    try {
+      const originAnalysis = await openai.analyzeOrigin(
+        metadata.imageUrl,
+        storedSimilarImages
+      );
+      console.log('✓ OpenAI analysis complete');
+    } catch (error) {
+      console.error('Error during OpenAI analysis:', error);
+      // Continue with empty origin analysis rather than failing
+      originAnalysis = {
+        originality: "unknown",
+        confidence: 0,
+        style_analysis: "Analysis could not be completed",
+        unique_characteristics: [],
+        estimated_era: "unknown",
+        estimated_origin: "unknown",
+        material_or_medium: "unknown",
+        comparison_notes: "Analysis failed due to technical issues",
+        recommendation: "Please try again or contact support for assistance"
+      };
+      console.log('⚠️ Using fallback origin analysis due to error');
+    }
     console.log('✓ OpenAI analysis complete');
 
     // Log analysis details
