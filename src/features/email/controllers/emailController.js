@@ -2,7 +2,7 @@ const validator = require('validator');
 const emailService = require('../services/emailService');
 const { validateSession } = require('../utils/validators');
 
-async function submitEmail(req, res) {
+exports.submitEmail = async function(req, res) {
   try {
     console.log('\n=== Starting Email Submission Process ===');
     const { email, sessionId } = req.body;
