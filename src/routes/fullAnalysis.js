@@ -73,12 +73,18 @@ router.post('/full-analysis', async (req, res) => {
 
       // Log new analysis to sheets
       try {
-        await sheetsService.updateAnalysisStatus(
-          sessionId,
-          'detailed',
-          detailedAnalysis
-        );
-        console.log('✓ Detailed analysis logged to sheets');
+        const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+        if (rowIndex !== -1) {
+          await sheetsService.sheets.spreadsheets.values.update({
+            spreadsheetId: sheetsService.sheetsId,
+            range: `Sheet1!I${rowIndex + 1}:J${rowIndex + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [['Detailed Analysis Complete', JSON.stringify(detailedAnalysis)]]
+            }
+          });
+          console.log('✓ Detailed analysis status and JSON saved to sheets');
+        }
       } catch (error) {
         console.error('Failed to log detailed analysis to sheets:', error);
         // Don't fail the request if sheets logging fails

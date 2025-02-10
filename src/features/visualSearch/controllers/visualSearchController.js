@@ -103,12 +103,18 @@ async function processVisualSearch(req, res) {
 
     // Log analysis to sheets
     try {
-      await sheetsService.updateAnalysisStatus(
-        sessionId,
-        'visual',
-        analysisResults
-      );
-      console.log('✓ Analysis logged to sheets');
+      const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+      if (rowIndex !== -1) {
+        await sheetsService.sheets.spreadsheets.values.update({
+          spreadsheetId: sheetsService.sheetsId,
+          range: `Sheet1!E${rowIndex + 1}:F${rowIndex + 1}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Visual Analysis Complete', JSON.stringify(analysisResults)]]
+          }
+        });
+        console.log('✓ Visual analysis status and JSON saved to sheets');
+      }
     } catch (error) {
       console.error('Failed to log analysis to sheets:', error);
       // Don't fail the request if sheets logging fails

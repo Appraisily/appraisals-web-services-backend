@@ -267,6 +267,22 @@ router.post('/origin-analysis', async (req, res) => {
     const [exists] = await originFile.exists();
     if (!exists) {
       console.error('✗ Failed to save origin analysis results');
+      // Update sheets with failure status
+      try {
+        const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+        if (rowIndex !== -1) {
+          await sheetsService.sheets.spreadsheets.values.update({
+            spreadsheetId: sheetsService.sheetsId,
+            range: `Sheet1!G${rowIndex + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [['Origin Analysis Failed']]
+            }
+          });
+        }
+      } catch (sheetsError) {
+        console.error('Failed to update sheets with failure status:', sheetsError);
+      }
       throw new Error('Failed to save origin analysis results');
     }
     console.log('✓ Origin analysis saved successfully');
@@ -284,14 +300,20 @@ router.post('/origin-analysis', async (req, res) => {
     });
     console.log('✓ Session metadata updated');
 
-    // Log origin analysis to sheets
+    // Update sheets with success status and analysis JSON
     try {
-      await sheetsService.updateAnalysisStatus(
-        sessionId,
-        'origin',
-        originResults
-      );
-      console.log('✓ Origin analysis logged to sheets');
+      const rowIndex = await sheetsService.findRowBySessionId(sessionId);
+      if (rowIndex !== -1) {
+        await sheetsService.sheets.spreadsheets.values.update({
+          spreadsheetId: sheetsService.sheetsId,
+          range: `Sheet1!G${rowIndex + 1}:H${rowIndex + 1}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['Origin Analysis Complete', JSON.stringify(originResults)]]
+          }
+        });
+        console.log('✓ Origin analysis status and JSON saved to sheets');
+      }
     } catch (error) {
       console.error('Failed to log origin analysis to sheets:', error);
       // Don't fail the request if sheets logging fails
