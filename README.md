@@ -48,10 +48,12 @@ This service provides expert art and antique analysis through AI-powered visual 
 ### Core Analysis Features
 - Dual analysis system using Google Cloud Vision and OpenAI Vision
 - Origin analysis for artwork authenticity
-- Visual similarity search with parallel API processing
+- Visual similarity search with parallel API processing and reliable image storage
 - Value estimation using AI-powered valuation model
 - Comprehensive image metadata extraction
 - Concise 5-word descriptions for quick item identification
+- Robust error handling and fallback mechanisms
+- Sequential image processing with consistent naming
 
 ### Technical Features
 - RESTful API endpoints
@@ -65,10 +67,12 @@ This service provides expert art and antique analysis through AI-powered visual 
 ### Storage & Data Management
 - Session-based file organization
 - Automatic file cleanup
-- Structured JSON storage for analysis results
+- Structured JSON storage with consistent naming conventions
 - Metadata tracking for all uploads
-- Similar image storage and management
+- Reliable similar image storage with sequential naming
+- Guaranteed image processing order
 - Value estimation results storage
+- Automatic retry mechanisms for failed operations
 
 ## Architecture
 
@@ -109,10 +113,26 @@ src/
 ### Request Flow
 1. Client uploads image → Temporary storage in GCS
 2. Visual analysis triggered → Parallel processing with Vision API and OpenAI
-3. Origin analysis → Combines visual search results with AI analysis
+3. Origin analysis → Uses stored GCS images for reliable processing
 4. Value estimation → Based on detailed analysis
 5. Report generation → Comprehensive HTML report
 6. Email delivery → Async processing and CRM notification
+
+### Image Processing Flow
+1. Image Upload
+   - Validation and storage in GCS
+   - Session metadata creation
+
+2. Visual Search
+   - Parallel Vision API and OpenAI analysis
+   - Sequential download of similar images
+   - Consistent image naming (similar-image1.jpg to similar-image5.jpg)
+   - Reliable storage in GCS with proper error handling
+
+3. Origin Analysis
+   - Uses stored GCS images instead of external URLs
+   - Fallback mechanisms for analysis failures
+   - Comprehensive error handling and logging
 
 ## Requirements
 
@@ -261,9 +281,34 @@ Automated deployment pipeline using Cloud Build:
 1. Image upload failures
    - Check file size (max 10MB)
    - Verify supported formats (JPEG, PNG, WebP)
-2. Analysis timeout
+   - Check network connectivity
+
+2. Analysis failures
    - Check service memory allocation
    - Verify API quotas
+   - Review error logs for specific failure points
+
+3. Image Processing Issues
+   - External image download failures
+   - Timeout during image processing
+   - Invalid image formats or corrupt files
+
+### Error Handling
+The service implements multiple layers of error handling:
+1. Input Validation
+   - File size and format checks
+   - Session ID validation
+   - Email format verification
+
+2. Process Recovery
+   - Automatic retry for failed downloads
+   - Fallback analysis results
+   - Graceful degradation of service
+
+3. Error Logging
+   - Detailed error messages
+   - Stack traces in development
+   - Structured logging for debugging
 
 ### Logging
 ```bash
@@ -276,7 +321,17 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 3. Follow code style guidelines
 4. Submit pull request
 
-## License
+### Code Style
+- Use ESLint configuration
+- Follow Node.js best practices
+- Document all functions and modules
+- Implement comprehensive error handling
+- Use consistent logging patterns
+- Follow sequential processing patterns
+- Maintain consistent file naming conventions
+- Add appropriate logging
+
+## License and Support
 MIT License
 
 ## Acknowledgments
