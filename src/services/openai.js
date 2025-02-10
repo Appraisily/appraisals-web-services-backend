@@ -160,17 +160,28 @@ class OpenAIService {
       throw new Error('OpenAI client not initialized');
     }
 
+    // Ensure metadata is available
+    if (!analysisData.metadata?.sessionId || !analysisData.metadata?.imageUrl) {
+      console.warn('Missing metadata for report generation:', {
+        hasSessionId: !!analysisData.metadata?.sessionId,
+        hasImageUrl: !!analysisData.metadata?.imageUrl
+      });
+    }
     try {
       const response = await this.client.chat.completions.create({
         model: getModel('HTML_REPORT'),
         messages: [
           {
             role: "assistant",
-            content: `${HTML_REPORT_PROMPT}\n\nI will help generate a clean HTML report using only <p>, <b>, and <br> tags.`
+            content: HTML_REPORT_PROMPT
           },
           {
             role: "assistant",
-            content: JSON.stringify(analysisData)
+            content: JSON.stringify({
+              ...analysisData,
+              sessionId: analysisData.metadata?.sessionId || 'N/A',
+              userImageUrl: analysisData.metadata?.imageUrl || ''
+            })
           }
         ]
       });

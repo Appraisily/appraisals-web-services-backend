@@ -96,7 +96,7 @@ Where each field should be completed as follows:
    - reasoning: Explain, using technical detail, how you arrived at this conclusion (mention style, known artistic or manufacturing traits, relevant design movements, hallmark references, etc.).
 
 2. signature_check:
-   - signature_text: Transcribe any visible text, maker’s mark, monogram, or inscription found.
+   - signature_text: Transcribe any visible text, maker's mark, monogram, or inscription found.
    - interpretation: Discuss its significance (e.g., the name of the artist or workshop, possible date, or factory mark).
 
 3. origin_analysis:
@@ -104,7 +104,7 @@ Where each field should be completed as follows:
    - reasoning: Cite stylistic, historical, or material clues (e.g., specific glazing techniques, hallmark shapes, known design motifs) that point to this origin.
 
 4. marks_recognition:
-   - marks_identified: Describe any maker’s marks, stamps, or hallmarks on the item.
+   - marks_identified: Describe any maker's marks, stamps, or hallmarks on the item.
    - interpretation: Explain the meaning or typical usage of these marks (e.g., silver purity stamp, hallmark from a specific city/region, foundry mark, antique classification marks).
 
 5. age_analysis:
@@ -134,6 +134,8 @@ const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate 
 You will receive:
 1. Analysis data that may be partially complete (some analyses might be null if they failed)
 2. A template structure to follow for the report format
+3. The user's uploaded image URL (userImageUrl)
+4. The session ID (sessionId)
 
 Your task is to:
 1. Extract relevant information from the analysis data
@@ -184,22 +186,6 @@ Use the following template structure, replacing placeholders with actual data:
                         <span style="color: #6b7280;">{{DESCRIPTION}}</span>
                       </div>
                     </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Header Section -->
-          <tr>
-            <td style="padding: 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <h1 style="margin: 0; color: #111827; font-size: 24px;">{{TITLE}}</h1>
-                    <p style="margin: 8px 0 0; color: #6b7280;">Session ID: {{SESSION_ID}}</p>
-                    <p style="margin: 4px 0 0; color: #6b7280;">Category: {{CATEGORY}}</p>
-                    <p style="margin: 4px 0 0; color: #6b7280;">Description: {{DESCRIPTION}}</p>
                   </td>
                 </tr>
               </table>
@@ -342,17 +328,6 @@ Use the following template structure, replacing placeholders with actual data:
             </td>
           </tr>
         </table>
-
-        <!-- Footer -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="padding: 32px; text-align: center;">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                © 2024 Appraisily. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
       </td>
     </tr>
   </table>
@@ -360,7 +335,7 @@ Use the following template structure, replacing placeholders with actual data:
 
 Placeholder Mapping:
 1. {{TITLE}} - Use detailedAnalysis.concise_description or a default title
-2. {{SESSION_ID}} - The session ID from the request
+2. {{SESSION_ID}} - From sessionId (CRITICAL: This must be included exactly as provided)
 3. {{CATEGORY}} - From visualAnalysis.openai.category
 4. {{DESCRIPTION}} - From visualAnalysis.openai.description
 5. {{VALUE_RANGE}} - Format from valueAnalysis.minValue and valueAnalysis.maxValue
@@ -373,7 +348,7 @@ Placeholder Mapping:
 12. {{AGE_ANALYSIS}} - Combine detailedAnalysis.age_analysis.estimated_date_range and reasoning
 13. {{AUCTION_RESULTS}} - Format table from valueAnalysis.auctionResults
 14. {{VALUE_ANALYSIS}} - From valueAnalysis.explanation
-15. {{USER_IMAGE_URL}} - From metadata.imageUrl
+15. {{USER_IMAGE_URL}} - From userImageUrl (CRITICAL: This must be included exactly as provided)
 16. {{SIMILAR_IMAGES}} - Format grid from analysis.vision.matches.similar (use storedImage.storedUrl)
 
 Important:
@@ -383,7 +358,9 @@ Important:
 4. Format numbers and dates appropriately
 5. Keep the output clean and professional
 6. Do not add any styling beyond what's in the template
-7. Do not include references to AI or OpenAI`;
+7. Do not include references to AI or OpenAI
+8. CRITICAL: Always include the user's image URL ({{USER_IMAGE_URL}}) and session ID ({{SESSION_ID}}) exactly as provided
+9. CRITICAL: Do not modify or generate URLs - use the exact URLs provided`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,

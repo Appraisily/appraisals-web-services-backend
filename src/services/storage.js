@@ -105,7 +105,13 @@ class CloudServices {
       }
 
       // Generate HTML report
-      const htmlContent = await openai.generateHtmlReport(reportData);
+      const htmlContent = await openai.generateHtmlReport({
+        ...reportData,
+        metadata: {
+          sessionId,
+          imageUrl: `https://storage.googleapis.com/${this.bucket.name}/sessions/${sessionId}/UserUploadedImage.${reportData.visualAnalysis?.metadata?.mimeType?.split('/')[1] || 'jpg'}`
+        }
+      });
 
       // Save HTML report
       const reportFile = this.bucket.file(`sessions/${sessionId}/report.html`);
