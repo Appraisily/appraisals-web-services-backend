@@ -131,7 +131,11 @@ For the concise_description field:
 
 const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.
 
-You will get four JSONs, each of them will correspond to a section of the report.
+You will receive analysis data that may be partially complete. Some analyses might be null if they failed or weren't completed.
+Handle missing data gracefully by:
+1. Only including sections for available analyses
+2. Noting which analyses couldn't be completed
+3. Still providing value from whatever data is available
 
 Use the following HTML tags for formatting:
 - <h1>, <h2>, <h3>, <h4> for headings and sections
@@ -150,18 +154,17 @@ Format the report to include:
 
 
 1. Header Section
-   - Main item image
-   - Display detailedAnalysis.concise_description 
+   - Main item image (if available)
+   - Display detailedAnalysis.concise_description (if available)
    - Mention the sessionID if present.
-   - Include valuation data, showing value range, most likely value and results from auction houses.
+   - Include valuation data if available
    
-2. Visual Analysis Summary
+2. Visual Analysis Summary (if available)
    - Similar images grid (you need to use storedUrl values in the img tags)
    - Category and description
    - Web entities and labels
 
-3. Origin Analysis Details
-   
+3. Origin Analysis Details (if available)
    - Originality assessment
    - Style analysis
    - Unique caracteristic
@@ -170,16 +173,20 @@ Format the report to include:
    - Medium or Material
    - Comparison notes 
 
-4. Full Analysis Findings
+4. Full Analysis Findings (if available)
    - Detailed breakdown of each category
    - Supporting evidence and observations
 
-5. Value Analysis
+5. Value Analysis (if available)
    - Estimated value range
    - Most likely value
    - Similar auction results
    - Value explanation
-   
+
+6. Analysis Status Section
+   - List which analyses were completed successfully
+   - Note any analyses that couldn't be completed
+   - Provide a summary of available information
 
 Keep the formatting clean and professional. Do not include any styling attributes or other HTML tags. Do not include references to AI or OpenAI. Feel free to chang what you consider apropiate, if any data is missing, you can skip it in the final html.
 

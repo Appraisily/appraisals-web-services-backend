@@ -166,8 +166,9 @@ router.post('/origin-analysis', async (req, res) => {
 
     // Call OpenAI with the user's image and similar images
     console.log('\nCalling OpenAI for origin analysis...');
+    let originAnalysis;
     try {
-      const originAnalysis = await openai.analyzeOrigin(
+      originAnalysis = await openai.analyzeOrigin(
         metadata.imageUrl,
         storedSimilarImages
       );
