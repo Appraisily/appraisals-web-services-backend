@@ -131,78 +131,259 @@ For the concise_description field:
 
 const HTML_REPORT_PROMPT = `You are an expert art appraiser assistant. Generate a clean, professional HTML report from the provided analysis data.
 
-You will receive analysis data that may be partially complete. Some analyses might be null if they failed or weren't completed.
-Handle missing data gracefully by:
-1. Only including sections for available analyses
-2. Noting which analyses couldn't be completed
-3. Still providing value from whatever data is available
+You will receive:
+1. Analysis data that may be partially complete (some analyses might be null if they failed)
+2. A template structure to follow for the report format
 
-Use the following HTML tags for formatting:
-- <h1>, <h2>, <h3>, <h4> for headings and sections
-- <p> for paragraphs
-- <b> or <strong> for bold text
-- <i> or <em> for emphasis
-- <br> for line breaks
-- <ul> and <li> for bullet points
-- <img> for displaying images (use src attribute with the provided URLs)
-- <div> for grouping content
-- <span> for inline styling
-- <table>, <tr>, <th>, <td> for tabular data and JSON display
-- <pre> for formatted JSON content
+Your task is to:
+1. Extract relevant information from the analysis data
+2. Format it according to the template structure
+3. Replace placeholder values ({{PLACEHOLDER}}) with actual data
+4. Handle missing data gracefully by:
+   - Only including sections for available analyses
+   - Noting which analyses couldn't be completed
+   - Still providing value from whatever data is available
 
-Format the report to include:
+Use the following template structure, replacing placeholders with actual data:
 
+<template>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Customer Image -->
+          <tr>
+            <td style="padding: 0;">
+              <div style="position: relative; border-bottom: 1px solid #e5e7eb;">
+                <img src="{{USER_IMAGE_URL}}" alt="Analyzed Artwork" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; object-fit: contain;">
+                <div style="position: absolute; top: 16px; left: 16px; background-color: #2563eb; color: #ffffff; padding: 6px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500;">
+                  User Input
+                </div>
+              </div>
+            </td>
+          </tr>
 
-1. Header Section
-   - Main item image (if available)
-   - Display detailedAnalysis.concise_description (if available)
-   - Mention the sessionID if present.
-   - Include valuation data if available
-   
-2. Visual Analysis Summary (if available)
-   - Similar images grid (you need to use storedUrl values in the img tags)
-   - Category and description
-   - Web entities and labels
+          <!-- Basic Info -->
+          <tr>
+            <td style="padding: 24px; background: linear-gradient(to right, #f8fafc, #ffffff); border-bottom: 1px solid #e5e7eb;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 8px; color: #111827; font-size: 24px; font-weight: 700;">{{TITLE}}</h2>
+                    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 14px;">
+                      <div>
+                        <span style="color: #374151; font-weight: 500;">Session ID:</span>
+                        <code style="font-family: monospace; background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; color: #2563eb;">{{SESSION_ID}}</code>
+                      </div>
+                      <div>
+                        <span style="color: #374151; font-weight: 500;">Category:</span>
+                        <span style="color: #2563eb;">{{CATEGORY}}</span>
+                      </div>
+                      <div>
+                        <span style="color: #374151; font-weight: 500;">Description:</span>
+                        <span style="color: #6b7280;">{{DESCRIPTION}}</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-3. Origin Analysis Details (if available)
-   - Originality assessment
-   - Style analysis
-   - Unique caracteristic
-   - Era
-   - Origin
-   - Medium or Material
-   - Comparison notes 
+          <!-- Header Section -->
+          <tr>
+            <td style="padding: 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <h1 style="margin: 0; color: #111827; font-size: 24px;">{{TITLE}}</h1>
+                    <p style="margin: 8px 0 0; color: #6b7280;">Session ID: {{SESSION_ID}}</p>
+                    <p style="margin: 4px 0 0; color: #6b7280;">Category: {{CATEGORY}}</p>
+                    <p style="margin: 4px 0 0; color: #6b7280;">Description: {{DESCRIPTION}}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-4. Full Analysis Findings (if available)
-   - Detailed breakdown of each category
-   - Supporting evidence and observations
+          <!-- Value Estimation -->
+          <tr>
+            <td style="padding: 24px; background-color: rgba(59, 130, 246, 0.05);">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Value Estimation</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="50%">
+                    <p style="margin: 0; color: #6b7280;">Range:</p>
+                    <p style="margin: 4px 0 0; color: #2563eb; font-size: 20px; font-weight: bold;">{{VALUE_RANGE}}</p>
+                  </td>
+                  <td width="50%">
+                    <p style="margin: 0; color: #6b7280;">Most Likely:</p>
+                    <p style="margin: 4px 0 0; color: #2563eb; font-size: 20px; font-weight: bold;">{{MOST_LIKELY_VALUE}}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-5. Value Analysis (if available)
-   - Estimated value range
-   - Most likely value
-   - Similar auction results
-   - Value explanation
+          <!-- Visual Analysis -->
+          <tr>
+            <td style="padding: 32px;">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Visual Analysis</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Web Entities</h3>
+                      <div style="margin: 0; color: #6b7280;">{{WEB_ENTITIES}}</div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-6. Analysis Status Section
-   - List which analyses were completed successfully
-   - Note any analyses that couldn't be completed
-   - Provide a summary of available information
+          <!-- Similar Images -->
+          <tr>
+            <td style="padding: 0 32px 32px;">
+              <h3 style="margin: 0 0 16px; color: #111827; font-size: 18px;">Similar Artworks Found</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="font-size: 0;">
+                    {{SIMILAR_IMAGES}}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-Keep the formatting clean and professional. Do not include any styling attributes or other HTML tags. Do not include references to AI or OpenAI. Feel free to chang what you consider apropiate, if any data is missing, you can skip it in the final html.
+          <!-- Origin Analysis -->
+          <tr>
+            <td style="padding: 32px; background-color: #f8fafc;">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Origin Analysis</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <div style="background-color: #ffffff; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Originality Assessment</h3>
+                      <div style="display: flex; align-items: center; gap: 16px;">
+                        <span style="color: #6b7280;">Confidence: {{CONFIDENCE}}%</span>
+                        <div style="flex-grow: 1; height: 8px; background-color: #e5e7eb; border-radius: 9999px; overflow: hidden;">
+                          <div style="width: {{CONFIDENCE}}%; height: 100%; background-color: #2563eb; border-radius: 9999px;"></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Style Analysis</h3>
+                      <p style="margin: 0; color: #6b7280;">{{STYLE_ANALYSIS}}</p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; padding: 16px; border-radius: 8px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Unique Characteristics</h3>
+                      <ul style="margin: 0; padding-left: 20px; color: #6b7280;">
+                        {{UNIQUE_CHARACTERISTICS}}
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-For images:
-- Display the main item image prominently at the top
-- Include relevant similar images in the visual analysis section
-- Show comparison images in a grid layout when discussing similarities
-- Use the stored image URLs provided in the analysis data
+          <!-- Full Analysis -->
+          <tr>
+            <td style="padding: 32px;">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Full Analysis Findings</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Maker Analysis</h3>
+                      <p style="margin: 0; color: #6b7280;">{{MAKER_ANALYSIS}}</p>
+                    </div>
+                    
+                    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px;">
+                      <h3 style="margin: 0 0 8px; color: #4b5563; font-size: 16px;">Age Analysis</h3>
+                      <p style="margin: 0; color: #6b7280;">{{AGE_ANALYSIS}}</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-For JSON display:
-- Use <pre> tags to maintain formatting
-- Include a small heading above each JSON section (h4)
-- Format the JSON with proper indentation (2 spaces)
-- Replace the [value] placeholders with actual values from the provided data
-- Keep array values as [...] for brevity unless specifically relevant
-- Include all fields shown in the templates above`;
+          <!-- Recent Auction Results -->
+          <tr>
+            <td style="padding: 32px; background-color: #f8fafc;">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Recent Auction Results</h2>
+              {{AUCTION_RESULTS}}
+            </td>
+          </tr>
+
+          <!-- Value Analysis -->
+          <tr>
+            <td style="padding: 32px;">
+              <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Value Analysis</h2>
+              <div style="background-color: rgba(59, 130, 246, 0.05); padding: 16px; border-radius: 8px;">
+                <p style="margin: 0; color: #6b7280;">{{VALUE_ANALYSIS}}</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding: 32px; text-align: center; background-color: #f8fafc; border-radius: 0 0 8px 8px;">
+              <a href="https://appraisily.com/professional-appraisal" style="display: inline-block; padding: 16px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 8px;">
+                Get Professional Appraisal
+              </a>
+              <p style="margin: 16px 0 0; color: #6b7280; font-size: 14px;">
+                For a detailed professional appraisal and authentication of your artwork
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Footer -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="padding: 32px; text-align: center;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                © 2024 Appraisily. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</template>
+
+Placeholder Mapping:
+1. {{TITLE}} - Use detailedAnalysis.concise_description or a default title
+2. {{SESSION_ID}} - The session ID from the request
+3. {{CATEGORY}} - From visualAnalysis.openai.category
+4. {{DESCRIPTION}} - From visualAnalysis.openai.description
+5. {{VALUE_RANGE}} - Format from valueAnalysis.minValue and valueAnalysis.maxValue
+6. {{MOST_LIKELY_VALUE}} - From valueAnalysis.mostLikelyValue
+7. {{WEB_ENTITIES}} - Join top web entities from visualAnalysis.vision.webEntities
+8. {{CONFIDENCE}} - From originAnalysis.originAnalysis.confidence * 100
+9. {{STYLE_ANALYSIS}} - From originAnalysis.originAnalysis.style_analysis
+10. {{UNIQUE_CHARACTERISTICS}} - Format list from originAnalysis.originAnalysis.unique_characteristics
+11. {{MAKER_ANALYSIS}} - Combine detailedAnalysis.maker_analysis.creator_name and reasoning
+12. {{AGE_ANALYSIS}} - Combine detailedAnalysis.age_analysis.estimated_date_range and reasoning
+13. {{AUCTION_RESULTS}} - Format table from valueAnalysis.auctionResults
+14. {{VALUE_ANALYSIS}} - From valueAnalysis.explanation
+15. {{USER_IMAGE_URL}} - From metadata.imageUrl
+16. {{SIMILAR_IMAGES}} - Format grid from analysis.vision.matches.similar (use storedImage.storedUrl)
+
+Important:
+1. Maintain the exact HTML structure and styling from the template
+2. Skip sections entirely if their corresponding analysis data is null
+3. For missing data, use appropriate fallback text (e.g., "Analysis not available")
+4. Format numbers and dates appropriately
+5. Keep the output clean and professional
+6. Do not add any styling beyond what's in the template
+7. Do not include references to AI or OpenAI`;
 
 module.exports = {
   VISUAL_SEARCH_PROMPT,
