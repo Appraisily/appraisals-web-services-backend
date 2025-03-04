@@ -5,6 +5,9 @@ const { filterValidImageUrls } = require('../utils/urlValidator');
 const originFormatter = require('../services/originFormatter');
 const sheetsService = require('../services/sheets');
 const fetch = require('node-fetch');
+const { body } = require('express-validator');
+const { validate } = require('../middleware/validation');
+const { ValidationError, NotFoundError, ServerError } = require('../utils/errors');
 
 const router = express.Router();
 
@@ -33,20 +36,24 @@ async function waitForAnalysis(sessionId, bucket, maxRetries = 5, retryDelay = 2
   }
   console.log('✗ Analysis wait timeout exceeded');
   console.log('=== Wait for Analysis Failed ===\n');
-  throw new Error('Visual analysis did not complete in time');
+  throw new ServerError('Visual analysis did not complete in time', { maxRetries, retryDelay });
 }
 
-router.post('/origin-analysis', async (req, res) => {
+router.post('/origin-analysis', [
+  body('sessionId')
+    .notEmpty()
+    .withMessage('Session ID is required')
+    .isString()
+    .withMessage('Session ID must be a string'),
+  validate
+], async (req, res, next) => {
   try {
     console.log('\n=== Starting Origin Analysis ===');
     const { sessionId } = req.body;
     
     if (!sessionId) {
       console.log('✗ No session ID provided');
-      return res.status(400).json({
-        success: false,
-        message: 'Session ID is required.'
-      });
+      throw new ValidationError('Session ID is required', 400);
     }
 
     console.log(`Processing origin analysis for session ID: ${sessionId}`);
@@ -61,10 +68,7 @@ router.post('/origin-analysis', async (req, res) => {
     const [metadataExists] = await metadataFile.exists();
     if (!metadataExists) {
       console.log('✗ Session not found');
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found.'
-      });
+      throw new NotFoundError('Session not found', 404);
     }
     console.log('✓ Session exists');
 
@@ -97,7 +101,7 @@ router.post('/origin-analysis', async (req, res) => {
             statusText: response.statusText,
             body: errorText
           });
-          throw new Error(`Visual search failed with status ${response.status}: ${errorText}`);
+          throw new ServerError(`Visual search failed with status ${response.status}: ${errorText}`, { status: response.status, statusText: response.statusText, body: errorText });
         }
 
         // Wait for analysis to complete
@@ -107,11 +111,7 @@ router.post('/origin-analysis', async (req, res) => {
       } catch (error) {
         console.error('✗ Error performing visual analysis:', error);
         console.error('Stack trace:', error.stack);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to perform required visual analysis.',
-          error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        throw new ServerError('Failed to perform required visual analysis.', { error: process.env.NODE_ENV === 'development' ? error.message : undefined });
       }
     } else {
       // Load existing analysis
@@ -227,10 +227,7 @@ router.post('/origin-analysis', async (req, res) => {
     
     if (!imageExists) {
       console.log('✗ Original image not found');
-      return res.status(404).json({
-        success: false,
-        message: 'Original uploaded image not found.'
-      });
+      throw new NotFoundError('Original uploaded image not found', 404);
     }
     console.log('✓ Original image verified');
 
@@ -318,7 +315,7 @@ router.post('/origin-analysis', async (req, res) => {
       } catch (sheetsError) {
         console.error('Failed to update sheets with failure status:', sheetsError);
       }
-      throw new Error('Failed to save origin analysis results');
+      throw new ServerError('Failed to save origin analysis results', { sheetsError });
     }
     console.log('✓ Origin analysis saved successfully');
 
@@ -370,11 +367,7 @@ router.post('/origin-analysis', async (req, res) => {
     console.error('Stack trace:', error.stack);
     console.log('=== Origin Analysis Failed ===\n');
     
-    res.status(500).json({
-      success: false,
-      message: 'Error processing origin analysis.',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error.'
-    });
+    next(error);
   }
 });
 
