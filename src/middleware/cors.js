@@ -11,7 +11,8 @@ const corsMiddleware = cors({
       '.run.app',
       'stackblitz.io',
       'stackblitz.com',
-      'appraisily.com'
+      'appraisily.com',
+      '.netlify.app'
     ];
     
     if (allowedDomains.some(domain => origin.includes(domain))) {
