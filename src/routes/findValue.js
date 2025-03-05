@@ -2,23 +2,20 @@ const express = require('express');
 const fetch = require('node-fetch');
 const cloudServices = require('../services/storage');
 const sheetsService = require('../services/sheets');
-const { body } = require('express-validator');
-const { validate } = require('../middleware/validation');
-const { ValidationError, NotFoundError } = require('../utils/errors');
 
 const router = express.Router();
 
-router.post('/find-value', [
-  body('sessionId')
-    .notEmpty()
-    .withMessage('Session ID is required')
-    .isString()
-    .withMessage('Session ID must be a string'),
-  validate
-], async (req, res, next) => {
+router.post('/find-value', async (req, res) => {
   try {
     const { sessionId } = req.body;
     
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID is required.'
+      });
+    }
+
     console.log(`Processing value estimation for session ID: ${sessionId}`);
 
     // Get session metadata and detailed analysis
@@ -27,7 +24,10 @@ router.post('/find-value', [
     const [detailedExists] = await detailedFile.exists();
 
     if (!detailedExists) {
-      throw new NotFoundError('Detailed analysis not found. Please run full analysis first.');
+      return res.status(404).json({
+        success: false,
+        message: 'Detailed analysis not found. Please run full analysis first.'
+      });
     }
 
     // Load detailed analysis
@@ -35,8 +35,10 @@ router.post('/find-value', [
     const detailedAnalysis = JSON.parse(detailedContent.toString());
 
     if (!detailedAnalysis.concise_description) {
-      throw new ValidationError('Concise description not found in detailed analysis.', 
-        { param: 'detailed_analysis', required: 'concise_description' });
+      return res.status(400).json({
+        success: false,
+        message: 'Concise description not found in detailed analysis.'
+      });
     }
 
     // Call valuer agent API
@@ -118,7 +120,13 @@ router.post('/find-value', [
     });
 
   } catch (error) {
-    next(error);
+    console.error('\n✗ Error processing value estimation:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing value estimation.',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
   }
 });
 
