@@ -4,7 +4,6 @@ const cloudServices = require('./src/services/storage');
 const pubsubService = require('./src/services/pubsub');
 const sheetsService = require('./src/services/sheets');
 const corsMiddleware = require('./src/middleware/cors');
-const errorHandler = require('./src/middleware/errorHandler');
 const uploadRouter = require('./src/routes/upload');
 const visualSearchRouter = require('./src/features/visualSearch/routes');
 const sessionRouter = require('./src/routes/session');
@@ -32,22 +31,6 @@ app.use(originAnalysisRouter);
 app.use(fullAnalysisRouter);
 app.use(findValueRouter);
 app.use('/api/health', healthRouter);
-
-// 404 handler - must come after all valid routes
-app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    data: null,
-    error: {
-      code: 'NOT_FOUND',
-      message: 'The requested resource was not found',
-      details: null
-    }
-  });
-});
-
-// Error handling middleware - must be last
-app.use(errorHandler);
 
 // Initialize application
 const init = async () => {

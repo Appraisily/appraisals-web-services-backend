@@ -5,14 +5,20 @@ const formatters = require('../utils/formatters');
 const metadataHandler = require('../utils/metadataHandler');
 const imageDownloader = require('../utils/imageDownloader');
 const mime = require('mime-types');
-const { ValidationError, NotFoundError, ServerError } = require('../../../utils/errors');
 
 module.exports = { processVisualSearch };
 
-async function processVisualSearch(req, res, next) {
+async function processVisualSearch(req, res) {
   try {
     const { sessionId } = req.body;
     
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID is required.'
+      });
+    }
+
     console.log(`Processing visual search for session ID: ${sessionId}`);
 
     // Get session metadata
@@ -21,7 +27,10 @@ async function processVisualSearch(req, res, next) {
     const [metadataExists] = await metadataFile.exists();
 
     if (!metadataExists) {
-      throw new NotFoundError('Session not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found.'
+      });
     }
 
     // Load metadata
@@ -35,33 +44,9 @@ async function processVisualSearch(req, res, next) {
     const [imageExists] = await imageFile.exists();
 
     if (!imageExists) {
-      throw new NotFoundError('Image not found');
-    }
-
-    // Check if analysis already exists
-    const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
-    const [analysisExists] = await analysisFile.exists();
-
-    if (analysisExists) {
-      // Load existing analysis
-      const [analysisContent] = await analysisFile.download();
-      const analysis = JSON.parse(analysisContent.toString());
-      
-      console.log('Using existing analysis');
-      
-      // Update metadata if needed
-      if (!metadata.analyzed) {
-        metadata.analyzed = true;
-        await metadataHandler.updateMetadata(sessionId, metadata);
-      }
-      
-      // Return standardized success response
-      return res.json({
-        success: true,
-        data: {
-          analysis
-        },
-        error: null
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found.'
       });
     }
 
@@ -107,6 +92,7 @@ async function processVisualSearch(req, res, next) {
     };
 
     // Save analysis results
+    const analysisFile = bucket.file(`sessions/${sessionId}/analysis.json`);
     const analysisString = JSON.stringify(analysisResults, null, 2);
     await analysisFile.save(analysisString, {
       contentType: 'application/json',
@@ -166,6 +152,11 @@ async function processVisualSearch(req, res, next) {
     });
 
   } catch (error) {
-    next(error);
+    console.error('Error processing visual search:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing visual search.',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error.'
+    });
   }
 }

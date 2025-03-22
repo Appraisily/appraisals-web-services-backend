@@ -1,29 +1,28 @@
 const express = require('express');
 const cloudServices = require('../services/storage');
-const { ValidationError, NotFoundError } = require('../utils/errors');
-const { param } = require('express-validator');
-const { validate } = require('../middleware/validation');
 
 const router = express.Router();
 
-// Add validation for sessionId parameter
-router.get('/:sessionId', [
-  param('sessionId')
-    .notEmpty()
-    .withMessage('Session ID is required')
-    .isString()
-    .withMessage('Session ID must be a string'),
-  validate
-], async (req, res, next) => {
+router.get('/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID is required.'
+      });
+    }
 
     const bucket = cloudServices.getBucket();
     const metadataFile = bucket.file(`sessions/${sessionId}/metadata.json`);
     const [metadataExists] = await metadataFile.exists();
 
     if (!metadataExists) {
-      throw new NotFoundError('Session not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found.'
+      });
     }
 
     // Load session data
@@ -52,19 +51,21 @@ router.get('/:sessionId', [
 
     res.json({
       success: true,
-      data: {
-        session: {
-          id: sessionId,
-          metadata,
-          analysis,
-          origin
-        }
-      },
-      error: null
+      session: {
+        id: sessionId,
+        metadata,
+        analysis,
+        origin
+      }
     });
 
   } catch (error) {
-    next(error);
+    console.error('Error retrieving session:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving session data.',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error.'
+    });
   }
 });
 
