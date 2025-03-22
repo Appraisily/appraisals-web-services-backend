@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 const { getModel } = require('../config/models');
-const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT, HTML_REPORT_PROMPT } = require('../config/prompts');
+const { VISUAL_SEARCH_PROMPT, ORIGIN_ANALYSIS_PROMPT, FULL_ANALYSIS_PROMPT, HTML_REPORT_PROMPT, INTERACTIVE_REPORT_PROMPT } = require('../config/prompts');
 
 class OpenAIService {
   constructor() {
@@ -189,6 +189,58 @@ class OpenAIService {
       return response.choices[0]?.message?.content || '';
     } catch (error) {
       console.error('Error generating HTML report with OpenAI:', error);
+      throw error;
+    }
+  }
+
+  async generateInteractiveReport(analysisData) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    // Ensure metadata is available
+    if (!analysisData.metadata?.sessionId || !analysisData.metadata?.imageUrl) {
+      console.warn('Missing metadata for interactive report generation:', {
+        hasSessionId: !!analysisData.metadata?.sessionId,
+        hasImageUrl: !!analysisData.metadata?.imageUrl
+      });
+    }
+    
+    try {
+      const response = await this.client.chat.completions.create({
+        model: getModel('INTERACTIVE_REPORT'), // Using a more powerful model for the interactive report
+        messages: [
+          {
+            role: "assistant",
+            content: INTERACTIVE_REPORT_PROMPT
+          },
+          {
+            role: "assistant",
+            content: JSON.stringify({
+              ...analysisData,
+              sessionId: analysisData.metadata?.sessionId || 'N/A',
+              userImageUrl: analysisData.metadata?.imageUrl || ''
+            })
+          }
+        ]
+      });
+
+      // Process the response to match the interactive template format
+      const { generateInteractiveReport } = require('../templates/interactiveReport');
+      return generateInteractiveReport({
+        metadata: {
+          sessionId: analysisData.metadata?.sessionId || 'N/A',
+          imageUrl: analysisData.metadata?.imageUrl || ''
+        },
+        detailedAnalysis: analysisData.detailedAnalysis || null,
+        visualAnalysis: analysisData.visualAnalysis || null,
+        originAnalysis: analysisData.originAnalysis || null,
+        valueAnalysis: analysisData.valueAnalysis || null,
+        // Add OpenAI-generated content as dynamic content
+        dynamicContent: response.choices[0]?.message?.content || ''
+      });
+    } catch (error) {
+      console.error('Error generating interactive report with OpenAI:', error);
       throw error;
     }
   }

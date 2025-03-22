@@ -129,6 +129,81 @@ class CloudServices {
       throw error;
     }
   }
+
+  async generateInteractiveReport(sessionId) {
+    if (!this.bucket) {
+      throw new Error('Storage not initialized');
+    }
+
+    try {
+      console.log(`Generating interactive HTML report for session ${sessionId}...`);
+      
+      // Try to load each analysis file, using null for missing ones
+      const reportData = {};
+      
+      try {
+        const [content] = await this.bucket.file(`sessions/${sessionId}/analysis.json`).download();
+        reportData.visualAnalysis = JSON.parse(content.toString());
+      } catch (error) {
+        console.log('Visual analysis not available:', error.message);
+        reportData.visualAnalysis = null;
+      }
+      
+      try {
+        const [content] = await this.bucket.file(`sessions/${sessionId}/origin.json`).download();
+        reportData.originAnalysis = JSON.parse(content.toString());
+      } catch (error) {
+        console.log('Origin analysis not available:', error.message);
+        reportData.originAnalysis = null;
+      }
+      
+      try {
+        const [content] = await this.bucket.file(`sessions/${sessionId}/detailed.json`).download();
+        reportData.detailedAnalysis = JSON.parse(content.toString());
+      } catch (error) {
+        console.log('Detailed analysis not available:', error.message);
+        reportData.detailedAnalysis = null;
+      }
+      
+      try {
+        const [content] = await this.bucket.file(`sessions/${sessionId}/value.json`).download();
+        reportData.valueAnalysis = JSON.parse(content.toString());
+      } catch (error) {
+        console.log('Value analysis not available:', error.message);
+        reportData.valueAnalysis = null;
+      }
+
+      // Check if we have at least one analysis to generate a report
+      if (!reportData.visualAnalysis && !reportData.originAnalysis && 
+          !reportData.detailedAnalysis && !reportData.valueAnalysis) {
+        throw new Error('No analysis data available to generate interactive report');
+      }
+
+      // Generate interactive HTML report
+      const htmlContent = await openai.generateInteractiveReport({
+        ...reportData,
+        metadata: {
+          sessionId,
+          imageUrl: `https://storage.googleapis.com/${this.bucket.name}/sessions/${sessionId}/UserUploadedImage.${reportData.visualAnalysis?.metadata?.mimeType?.split('/')[1] || 'jpg'}`
+        }
+      });
+
+      // Save interactive HTML report
+      const reportFile = this.bucket.file(`sessions/${sessionId}/interactive-report.html`);
+      await reportFile.save(htmlContent, {
+        contentType: 'text/html',
+        metadata: {
+          cacheControl: 'no-cache'
+        }
+      });
+
+      console.log('✓ Interactive HTML report generated and saved');
+      return htmlContent;
+    } catch (error) {
+      console.error('Error generating interactive HTML report:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CloudServices();

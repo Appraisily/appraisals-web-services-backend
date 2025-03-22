@@ -8,6 +8,7 @@ const OPENAI_MODELS = {
   VISUAL_SEARCH: 'gpt-4o',
   ORIGIN: 'o1',
   HTML_REPORT: 'o3-mini',
+  INTERACTIVE_REPORT: 'o3',
   
   // Default model if type is not specified
   DEFAULT: 'gpt-4o'
