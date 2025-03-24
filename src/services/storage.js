@@ -54,6 +54,33 @@ class CloudServices {
   getVisionClient() {
     return this.visionClient;
   }
+  
+  /**
+   * Gets the session metadata from storage
+   * @param {string} sessionId The session ID
+   * @returns {Promise<Object>} The session metadata
+   */
+  async getSessionMetadata(sessionId) {
+    try {
+      if (!this.bucket) {
+        throw new Error('Storage not initialized');
+      }
+      
+      const file = this.bucket.file(`sessions/${sessionId}/metadata.json`);
+      const [exists] = await file.exists();
+      
+      if (!exists) {
+        console.warn(`Metadata for session ${sessionId} not found`);
+        return null;
+      }
+      
+      const [content] = await file.download();
+      return JSON.parse(content.toString());
+    } catch (error) {
+      console.error(`Failed to get metadata for session ${sessionId}:`, error);
+      return null;
+    }
+  }
 
   async generateHtmlReport(sessionId) {
     if (!this.bucket) {

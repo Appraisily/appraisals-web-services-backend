@@ -34,11 +34,48 @@ router.post('/find-value', async (req, res) => {
     const [detailedContent] = await detailedFile.download();
     const detailedAnalysis = JSON.parse(detailedContent.toString());
 
+    // Add fallback for missing concise_description
     if (!detailedAnalysis.concise_description) {
-      return res.status(400).json({
-        success: false,
-        message: 'Concise description not found in detailed analysis.'
-      });
+      console.warn('Missing concise_description in detailed analysis, generating fallback...');
+      
+      try {
+        // Attempt to generate a concise description from available data
+        const metadata = await cloudServices.getSessionMetadata(sessionId);
+        
+        let category = 'Unknown Item';
+        let description = '';
+        
+        if (metadata && metadata.analysisResults && metadata.analysisResults.openaiAnalysis) {
+          category = metadata.analysisResults.openaiAnalysis.category || 'Art';
+          description = metadata.analysisResults.openaiAnalysis.description || '';
+        }
+        
+        // Create a fallback description that's usable for value estimation
+        detailedAnalysis.concise_description = `${category} ${description}`.trim();
+        console.log(`Generated fallback description: "${detailedAnalysis.concise_description}"`);
+        
+        if (!detailedAnalysis.concise_description || detailedAnalysis.concise_description === '') {
+          detailedAnalysis.concise_description = 'Unknown Art Item';
+          console.log('Using generic "Unknown Art Item" fallback description');
+        }
+      } catch (metadataError) {
+        console.error('Error getting metadata for fallback description:', metadataError);
+        // Set a generic fallback if all else fails
+        detailedAnalysis.concise_description = 'Unknown Art Item';
+        console.log('Using generic "Unknown Art Item" fallback description due to error');
+      }
+      
+      // Save the updated analysis back to storage
+      try {
+        await detailedFile.save(JSON.stringify(detailedAnalysis, null, 2), {
+          contentType: 'application/json',
+          metadata: { cacheControl: 'no-cache' }
+        });
+        console.log('Updated detailed analysis with fallback concise_description');
+      } catch (saveErr) {
+        console.error('Failed to save updated detailed analysis:', saveErr);
+        // Continue with the fallback in memory even if save fails
+      }
     }
 
     // Call valuer agent API
