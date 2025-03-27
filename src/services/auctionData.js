@@ -52,20 +52,29 @@ class AuctionDataService {
   /**
    * Finds a value range for an item description using valuer-agent
    * @param {string} description - Item description
+   * @param {boolean} useAccurateValuation - Whether to use the accurate valuation model
    * @returns {Promise<Object>} Value range with auction results
    */
-  async findValueRange(description) {
-    console.log(`Finding value range for: "${description}"`);
+  async findValueRange(description, useAccurateValuation = true) {
+    console.log(`Finding value range for: "${description}" (using ${useAccurateValuation ? 'accurate' : 'standard'} valuation model)`);
     
     try {
+      // Build request with precision parameter
+      const requestBody = {
+        text: description
+      };
+      
+      // If using accurate valuation, add the parameter
+      if (useAccurateValuation) {
+        requestBody.useAccurateModel = true;
+      }
+      
       const response = await fetch(`${this.baseUrl}/api/find-value-range`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          text: description
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -75,7 +84,22 @@ class AuctionDataService {
       }
 
       const data = await response.json();
+      
+      if (data.success === false) {
+        throw new Error(data.error || 'Unknown error from valuer service');
+      }
+      
       console.log(`Value range found: $${data.minValue} - $${data.maxValue}`);
+      console.log(`Confidence level: ${data.confidenceLevel || 'Not provided'}`);
+      console.log(`Market trend: ${data.marketTrend || 'Not provided'}`);
+      
+      // Log some statistics about how tight the range is
+      if (data.minValue && data.maxValue) {
+        const range = data.maxValue - data.minValue;
+        const avgValue = (data.maxValue + data.minValue) / 2;
+        const rangePct = (range / avgValue) * 100;
+        console.log(`Value range: $${range.toLocaleString()} (${rangePct.toFixed(1)}% of average value)`);
+      }
       
       return data;
     } catch (error) {
