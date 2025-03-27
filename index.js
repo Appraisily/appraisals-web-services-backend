@@ -12,6 +12,8 @@ const originAnalysisRouter = require('./src/routes/originAnalysis');
 const fullAnalysisRouter = require('./src/routes/fullAnalysis');
 const findValueRouter = require('./src/routes/findValue');
 const healthRouter = require('./src/routes/health');
+const premiumDataRouter = require('./src/routes/premiumData');
+const auctionDataService = require('./src/services/auctionData');
 
 const app = express();
 
@@ -30,6 +32,7 @@ app.use(emailRouter);
 app.use(originAnalysisRouter);
 app.use(fullAnalysisRouter);
 app.use(findValueRouter);
+app.use('/api/premium', premiumDataRouter);
 app.use('/api/health', healthRouter);
 
 // Initialize application

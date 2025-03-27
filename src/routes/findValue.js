@@ -2,6 +2,8 @@ const express = require('express');
 const fetch = require('node-fetch');
 const cloudServices = require('../services/storage');
 const sheetsService = require('../services/sheets');
+const auctionDataService = require('../services/auctionData');
+const keywordExtraction = require('../services/keywordExtraction');
 
 const router = express.Router();
 
@@ -91,22 +93,43 @@ router.post('/find-value', async (req, res) => {
       }
     }
 
-    // Call valuer agent API
-    const response = await fetch('https://valuer-agent-856401495068.us-central1.run.app/api/find-value-range', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: detailedAnalysis.concise_description
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Valuer agent responded with status: ${response.status}`);
+    // Extract keywords for enhanced auction searching
+    console.log('Extracting keywords from detailed analysis...');
+    const keywords = await keywordExtraction.extractKeywords(detailedAnalysis);
+    console.log('Extracted keywords:', keywords);
+    
+    // Get value range from valuer agent using auction data service
+    console.log('Calling valuer agent for value range...');
+    const valueData = await auctionDataService.findValueRange(detailedAnalysis.concise_description);
+    
+    // Enhance with additional auction results if we have good keywords
+    if (keywords.length > 0 && keywords[0] !== detailedAnalysis.concise_description) {
+      try {
+        console.log('Fetching additional auction results with extracted keywords...');
+        const additionalResults = await auctionDataService.getAuctionResults(
+          keywords[0], // Use the most specific keyword set
+          Math.floor((valueData.minValue || 1000) * 0.7) // Use 70% of min value as floor
+        );
+        
+        if (additionalResults && additionalResults.auctionResults && additionalResults.auctionResults.length > 0) {
+          console.log(`Found ${additionalResults.auctionResults.length} additional auction results`);
+          
+          // Merge unique auction results
+          const existingTitles = new Set(valueData.auctionResults.map(result => result.title));
+          additionalResults.auctionResults.forEach(result => {
+            if (!existingTitles.has(result.title)) {
+              valueData.auctionResults.push(result);
+              existingTitles.add(result.title);
+            }
+          });
+          
+          console.log(`Total auction results after enhancement: ${valueData.auctionResults.length}`);
+        }
+      } catch (enhancementError) {
+        console.warn('Error enhancing auction results:', enhancementError);
+        // Continue with original results if enhancement fails
+      }
     }
-
-    const valueData = await response.json();
 
     // Update status in the map
     valueEstimationStatusMap.set(sessionId, {
@@ -330,6 +353,106 @@ router.post('/find-value/status', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error checking value estimation status.',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+});
+
+/**
+ * Fetch auction results for a specific session
+ * Uses keywords extracted from the analysis to find similar items
+ */
+router.post('/auction-results', async (req, res) => {
+  try {
+    const { sessionId, keyword, minPrice, limit } = req.body;
+    
+    if (!sessionId && !keyword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Either sessionId or keyword is required.'
+      });
+    }
+    
+    // If a direct keyword is provided, use it
+    if (keyword) {
+      console.log(`Fetching auction results for keyword: "${keyword}"`);
+      const results = await auctionDataService.getAuctionResults(
+        keyword, 
+        minPrice || 1000, 
+        limit || 10
+      );
+      
+      return res.json({
+        success: true,
+        results
+      });
+    }
+    
+    // Otherwise use the session to get analysis and extract keywords
+    console.log(`Fetching auction results for session: ${sessionId}`);
+    
+    // Get session metadata and detailed analysis
+    const bucket = cloudServices.getBucket();
+    const detailedFile = bucket.file(`sessions/${sessionId}/detailed.json`);
+    const [detailedExists] = await detailedFile.exists();
+
+    if (!detailedExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Detailed analysis not found. Please run full analysis first.'
+      });
+    }
+
+    // Load detailed analysis
+    const [detailedContent] = await detailedFile.download();
+    const detailedAnalysis = JSON.parse(detailedContent.toString());
+    
+    // Extract keywords for enhanced auction searching
+    console.log('Extracting keywords from detailed analysis...');
+    const keywords = await keywordExtraction.extractKeywords(detailedAnalysis);
+    console.log('Extracted keywords:', keywords);
+    
+    if (keywords.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not extract search keywords from analysis.'
+      });
+    }
+    
+    // Get auction results using the extracted keywords
+    const results = await auctionDataService.getAuctionResults(
+      keywords[0], // Use the most specific keyword set
+      minPrice || 1000,
+      limit || 10
+    );
+    
+    // Save results to session
+    console.log('Saving auction results to GCS...');
+    const auctionFile = bucket.file(`sessions/${sessionId}/auction-results.json`);
+    const auctionData = {
+      timestamp: Date.now(),
+      keywords,
+      ...results
+    };
+    
+    await auctionFile.save(JSON.stringify(auctionData, null, 2), {
+      contentType: 'application/json',
+      metadata: {
+        cacheControl: 'no-cache'
+      }
+    });
+    
+    res.json({
+      success: true,
+      keywords,
+      results
+    });
+    
+  } catch (error) {
+    console.error('Error fetching auction results:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching auction results.',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }
