@@ -9,6 +9,7 @@ const corsMiddleware = cors({
       'localhost',
       '127.0.0.1',
       '.run.app',
+      'screener-page-module-856401495068.us-central1.run.app',
       'stackblitz.io',
       'stackblitz.com',
       'appraisily.com',
