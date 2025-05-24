@@ -827,3 +827,22 @@ All configuration is managed through Google Secret Manager for security in Cloud
 - **Model Selection**: Dynamic model selection based on analysis type
 
 This microservice provides enterprise-grade art analysis capabilities with comprehensive technical documentation, robust error handling, and production-ready deployment configuration for Google Cloud Run environments.
+
+## CORS Configuration Update
+
+The backend now explicitly whitelists the new Cloud Run frontend origin:
+
+```
+screener-page-module-856401495068.us-central1.run.app
+```
+
+The middleware in `src/middleware/cors.js` already includes:
+```js
+  '.run.app',
+  'screener-page-module-856401495068.us-central1.run.app',
+```
+so no further action is required; legacy Netlify origins remain to support existing production versions during the transition.
+
+## Frontend Migration to Cloud Run
+
+The React screener frontend is now containerised and deployed to Cloud Run. Ensure `VITE_API_URL` environment variable points to this backend service URL when building the frontend image.
